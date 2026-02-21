@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/models/transaction.dart';
 import 'package:frontend/core/models/transaction_category_summary.dart';
 import 'package:frontend/core/theme/app_colors.dart';
-import 'package:frontend/features/movement/widgets/analysis_spending_bar.dart';
+import 'package:frontend/features/spendings/widgets/analysis_spending_bar.dart';
 
 class SpendingBarChart extends StatelessWidget {
   final List<TransactionCategorySummary> categorySummaries;

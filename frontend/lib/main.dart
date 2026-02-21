@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/navigation/main_navigation.dart';
 import 'package:frontend/core/theme/app_colors.dart';
 import 'package:frontend/features/movement/pages/movement_page.dart';
 
@@ -70,7 +71,7 @@ class MobileBankApp extends StatelessWidget {
         ),
       ),
 
-      home: const MovementPage(),
+      home: const MainNavigation(),
     );
   }
 }

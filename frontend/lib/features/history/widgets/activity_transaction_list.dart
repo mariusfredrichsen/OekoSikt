@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/models/transaction_direction.dart';
 import 'package:frontend/core/models/transaction.dart';
 import 'package:frontend/core/theme/app_colors.dart';
-import 'package:frontend/features/movement/widgets/activity_transaction_card.dart';
+import 'package:frontend/features/history/widgets/activity_transaction_card.dart';
 
 class TransactionList extends StatelessWidget {
   final List<Transaction> transactions;
