@@ -1,15 +1,13 @@
 import 'package:flutter/services.dart';
 import 'package:csv/csv.dart';
-import 'package:frontend/core/models/transaction_model.dart';
+import 'package:frontend/core/models/transaction.dart';
 
 class TransactionService {
   /// Loads transactions from the CSV file in assets
   static Future<List<Transaction>> loadTransactions() async {
     try {
       // Load the CSV file as a string
-      final rawData = await rootBundle.loadString(
-        'assets/Transaksjoner_2026-02-07.csv',
-      );
+      final rawData = await rootBundle.loadString('assets/Transaksjoner.csv');
 
       // Parse the CSV string into a list of lists
       // fieldDelimiter: ',' specifies comma-separated values

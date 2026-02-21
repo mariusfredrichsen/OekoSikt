@@ -77,6 +77,8 @@ class Transaction {
       return double.tryParse(amountStr.replaceAll(',', '.'));
     }
 
+    final categoryRaw = row.length > 21 ? asString(row[21]) : '';
+
     return Transaction(
       executionDate: parseDate(asString(row[0])),
       postedDate: parseDate(asString(row[1])),
@@ -101,11 +103,7 @@ class Transaction {
       message: asString(row[18]).isEmpty ? null : asString(row[18]),
       kid: asString(row[19]).isEmpty ? null : asString(row[19]),
       invoiceNumber: asString(row[20]).isEmpty ? null : asString(row[20]),
-      // Example parsing snippet:
-      category: TransactionCategory.values.firstWhere(
-        (e) => e.name == row[21],
-        orElse: () => TransactionCategory.other,
-      ),
+      category: TransactionCategory.fromString(categoryRaw),
     );
   }
 }

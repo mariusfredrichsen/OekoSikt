@@ -1,30 +1,28 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/models/transaction_categories.dart';
-import 'package:frontend/core/models/transaction_filter.dart';
+import 'package:frontend/core/models/transaction_direction.dart';
 import 'package:frontend/core/theme/app_colors.dart';
 
-class ActivityFilterBar extends StatelessWidget {
-  const ActivityFilterBar({
-    super.key,
-    required this.selectedTransactionFilter,
-    required this.onFilterChange,
-    required this.selectedTransactionCategory,
-    required this.onCategoryChange,
-  });
+class FilterBar extends StatelessWidget {
+  final TransactionDirection selectedDirection;
+  final TransactionCategory selectedCategory;
+  final ValueChanged<TransactionDirection> onDirectionChanged;
+  final ValueChanged<TransactionCategory> onCategoryChanged;
 
-  final TransactionFilter selectedTransactionFilter;
-  final ValueChanged<TransactionFilter> onFilterChange;
-  final TransactionCategory selectedTransactionCategory;
-  final ValueChanged<TransactionCategory> onCategoryChange;
+  const FilterBar({
+    super.key,
+    required this.selectedDirection,
+    required this.selectedCategory,
+    required this.onDirectionChanged,
+    required this.onCategoryChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: const BoxDecoration(
-        color: AppColors.surface,
         border: Border(bottom: BorderSide(color: AppColors.divider)),
       ),
       child: Row(
@@ -33,24 +31,21 @@ class ActivityFilterBar extends StatelessWidget {
             flex: 3,
             child: SizedBox(
               height: 32,
-              child: CupertinoSlidingSegmentedControl<TransactionFilter>(
-                groupValue: selectedTransactionFilter,
+              child: CupertinoSlidingSegmentedControl<TransactionDirection>(
+                groupValue: selectedDirection,
                 backgroundColor: AppColors.divider,
                 thumbColor: AppColors.surface,
                 onValueChanged: (value) =>
-                    value != null ? onFilterChange(value) : null,
+                    value != null ? onDirectionChanged(value) : null,
                 children: {
-                  TransactionFilter.all: _buildSegmentText(
-                    'ALL',
-                    TransactionFilter.all,
+                  TransactionDirection.all: _buildSegmentText(
+                    TransactionDirection.all,
                   ),
-                  TransactionFilter.outcome: _buildSegmentText(
-                    'OUT',
-                    TransactionFilter.outcome,
+                  TransactionDirection.outcome: _buildSegmentText(
+                    TransactionDirection.outcome,
                   ),
-                  TransactionFilter.income: _buildSegmentText(
-                    'IN',
-                    TransactionFilter.income,
+                  TransactionDirection.income: _buildSegmentText(
+                    TransactionDirection.income,
                   ),
                 },
               ),
@@ -78,7 +73,7 @@ class ActivityFilterBar extends StatelessWidget {
                     size: 18,
                     color: AppColors.navy,
                   ),
-                  value: selectedTransactionCategory,
+                  value: selectedCategory,
                   items: TransactionCategory.values.map((tc) {
                     return DropdownMenuItem<TransactionCategory>(
                       value: tc,
@@ -86,11 +81,15 @@ class ActivityFilterBar extends StatelessWidget {
                         children: [
                           Icon(tc.icon, size: 16, color: AppColors.navy),
                           const SizedBox(width: 8),
-                          Text(
-                            tc.label,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textPrimary,
+                          Expanded(
+                            child: Text(
+                              tc.label,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textPrimary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                           ),
                         ],
@@ -98,7 +97,7 @@ class ActivityFilterBar extends StatelessWidget {
                     );
                   }).toList(),
                   onChanged: (newValue) =>
-                      newValue != null ? onCategoryChange(newValue) : null,
+                      newValue != null ? onCategoryChanged(newValue) : null,
                 ),
               ),
             ),
@@ -108,10 +107,10 @@ class ActivityFilterBar extends StatelessWidget {
     );
   }
 
-  Widget _buildSegmentText(String text, TransactionFilter filter) {
-    final isSelected = selectedTransactionFilter == filter;
+  Widget _buildSegmentText(TransactionDirection direction) {
+    final isSelected = selectedDirection == direction;
     return Text(
-      text,
+      direction.label,
       style: TextStyle(
         fontSize: 12,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,

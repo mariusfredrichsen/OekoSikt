@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/models/time_period.dart';
 import 'package:frontend/core/models/transaction_categories.dart';
-import 'package:frontend/core/models/transaction_filter.dart';
-import 'package:frontend/core/models/transaction_model.dart';
+import 'package:frontend/core/models/transaction_direction.dart';
+import 'package:frontend/core/models/transaction_filter_state.dart';
+import 'package:frontend/core/models/transaction.dart';
 import 'package:frontend/core/theme/app_colors.dart';
 import 'package:frontend/features/movement/tabs/activity_tab_view.dart';
 import 'package:frontend/features/movement/tabs/analysis_tab_view.dart';
@@ -15,13 +17,17 @@ class MovementPage extends StatefulWidget {
 }
 
 class _MovementPageState extends State<MovementPage> {
-  List<Transaction> transactions = [];
-  List<Transaction> filtedTransactions = [];
-  bool isLoading = true;
-  String? errorMessage;
-  TransactionFilter selectedTransactionFilter = TransactionFilter.all;
-  int? selectedIndex;
-  TransactionCategory selectedTransactionCategory = TransactionCategory.all;
+  // data
+  List<Transaction> _allTransactions = [];
+  List<Transaction> _filteredTransactions = [];
+
+  // ui
+  bool _isLoading = true;
+  String? _errorMessage;
+  int? _expandedIndex;
+
+  // filters
+  TransactionFilterState _filters = TransactionFilterState();
 
   @override
   void initState() {
@@ -33,95 +39,98 @@ class _MovementPageState extends State<MovementPage> {
     try {
       final loadedTransactions = await TransactionService.loadTransactions();
       setState(() {
-        transactions = loadedTransactions;
-        filtedTransactions = loadedTransactions;
-        isLoading = false;
+        _allTransactions = loadedTransactions;
+        _filteredTransactions = loadedTransactions;
+        _isLoading = false;
       });
     } catch (e) {
       setState(() {
-        errorMessage = 'Failed to load transactions: $e';
-        isLoading = false;
+        _errorMessage = 'Failed to load transactions: $e';
+        _isLoading = false;
       });
     }
   }
 
-  void onFilterChange(TransactionFilter transactionFilter) {
+  void _applyFilters() {
     setState(() {
-      selectedTransactionFilter = transactionFilter;
-      filtedTransactions = transactions.where((transaction) {
-        bool result = true;
-        if (selectedTransactionFilter == TransactionFilter.income) {
-          result = transaction.amountIn != null;
-        } else if (selectedTransactionFilter == TransactionFilter.outcome) {
-          result = transaction.amountOut != null;
-        }
-        return result;
+      _filteredTransactions = _allTransactions.where((t) {
+        final matchDirection = switch (_filters.direction) {
+          TransactionDirection.all => true,
+          TransactionDirection.outcome => t.amountOut != null,
+          TransactionDirection.income => t.amountIn != null,
+        };
+
+        final matchCategory =
+            TransactionCategory.all == _filters.category ||
+            t.category == _filters.category;
+
+        return matchDirection && matchCategory;
       }).toList();
+      _expandedIndex = null;
     });
+  }
+
+  void _updateFilters(TransactionFilterState transactionFilter) {
+    _filters = transactionFilter;
+    _applyFilters();
   }
 
   void onSelectTransaction(int? index) {
     setState(() {
-      selectedIndex = (index == selectedIndex) ? null : index;
-    });
-  }
-
-  void onCategoryChange(TransactionCategory category) {
-    setState(() {
-      selectedTransactionCategory = category;
+      _expandedIndex = (index == _expandedIndex) ? null : index;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Transactions")),
-      body: _buildBody(),
+    return _buildCurrentView();
+  }
+
+  Widget _buildCurrentView() {
+    if (_isLoading) return _buildLoadingView();
+    if (_errorMessage != null) return _buildErrorView();
+    if (_allTransactions.isEmpty) return _buildIsEmptyView();
+    return _buildMainBody();
+  }
+
+  Widget _buildLoadingView() {
+    return const Center(child: CircularProgressIndicator());
+  }
+
+  Widget _buildErrorView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          const SizedBox(height: 16),
+          Text(_errorMessage!),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _isLoading = true;
+                _errorMessage = null;
+              });
+              _loadTransactions(); // Retry loading
+            },
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
     );
   }
 
-  /// Builds the body based on current state (loading, error, or data)
-  Widget _buildBody() {
-    // Show loading spinner while data loads
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+  Widget _buildIsEmptyView() {
+    return Center(child: Text('No transactions found'));
+  }
 
-    // Show error message if loading failed
-    if (errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 16),
-            Text(errorMessage!),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  isLoading = true;
-                  errorMessage = null;
-                });
-                _loadTransactions(); // Retry loading
-              },
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (transactions.isEmpty) {
-      return const Center(child: Text('No transactions found'));
-    }
-
-    // Show the list of transactions
+  Widget _buildMainBody() {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: Text("Transaction movement"),
+          title: const Text("Movements"),
           bottom: const TabBar(
             labelColor: AppColors.background,
             tabs: [
@@ -133,15 +142,22 @@ class _MovementPageState extends State<MovementPage> {
         body: TabBarView(
           children: [
             ActivityTabView(
-              transactions: filtedTransactions,
-              selectedTransactionFilter: selectedTransactionFilter,
-              onFilterChange: onFilterChange,
-              selectedIndex: selectedIndex,
-              onSelectTransaction: onSelectTransaction,
-              selectedTransactionCategory: selectedTransactionCategory,
-              onCategoryChange: onCategoryChange,
+              transactions: _filteredTransactions,
+              selectedDirection: _filters.direction,
+              selectedCategory: _filters.category,
+              expandedIndex: _expandedIndex,
+              onDirectionChanged: (dir) =>
+                  _updateFilters(_filters.copyWith(direction: dir)),
+              onCategoryChanged: (cat) =>
+                  _updateFilters(_filters.copyWith(category: cat)),
+              onTransactionTapped: (idx) => onSelectTransaction(idx),
             ),
-            const AnalysisTabView(),
+            AnalysisTabView(
+              selectedTimePeriod: _filters.period,
+              onTimePeriodChanged: (period) =>
+                  _updateFilters(_filters.copyWith(period: period)),
+              transactions: _allTransactions,
+            ),
           ],
         ),
       ),

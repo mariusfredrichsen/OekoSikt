@@ -1,8 +1,8 @@
-enum TransactionFilter {
+enum TransactionDirection {
   all('ALL'),
   outcome('OUT'),
   income('IN');
 
   final String label;
-  const TransactionFilter(this.label);
+  const TransactionDirection(this.label);
 }
