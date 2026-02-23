@@ -21,6 +21,10 @@ class _SpendingChartState extends State<SpendingPieChart> {
       return const Center(child: Text("No data available"));
     }
 
+    final double totalSum = widget.categorySummaries.fold(0.0, (prev, cat) {
+      return prev + cat.categorySum * -1;
+    });
+
     return Container(
       padding: EdgeInsets.all(32),
       child: Row(
@@ -66,17 +70,20 @@ class _SpendingChartState extends State<SpendingPieChart> {
                             fontSize: 8,
                           ),
                         ),
-                        Text(
-                          widget.categorySummaries
-                              .fold(0.0, (prev, cat) {
-                                return prev + cat.categorySum * -1;
-                              })
-                              .toStringAsFixed(0),
-                          style: TextStyle(
-                            color: AppColors.navy,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 24,
-                          ),
+                        TweenAnimationBuilder<double>(
+                          tween: Tween<double>(begin: 0, end: totalSum),
+                          duration: const Duration(milliseconds: 750),
+                          curve: Curves.easeOutExpo,
+                          builder: (context, value, child) {
+                            return Text(
+                              value.toStringAsFixed(0),
+                              style: const TextStyle(
+                                color: AppColors.navy,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 24,
+                              ),
+                            );
+                          },
                         ),
                         Text(
                           "NOK",
@@ -97,17 +104,66 @@ class _SpendingChartState extends State<SpendingPieChart> {
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: widget.categorySummaries.map((summary) {
-              return _Indicator(
+            children: List.generate(widget.categorySummaries.length, (index) {
+              final summary = widget.categorySummaries[index];
+              return _buildIndicator(
                 color: summary.category.color,
                 text: summary.category.label,
-                isSquare: false,
-                textColor:
-                    touchedIndex == widget.categorySummaries.indexOf(summary)
-                    ? AppColors.navy
-                    : AppColors.textSecondary,
+                isSelected: touchedIndex == index,
               );
-            }).toList(),
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIndicator({
+    required Color color,
+    required String text,
+    required bool isSelected,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: Center(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: isSelected ? 14 : 10,
+                height: isSelected ? 14 : 10,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Stack(
+            alignment: Alignment.centerLeft,
+            children: [
+              Opacity(
+                opacity: 0,
+                child: Text(
+                  text,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? AppColors.navy : AppColors.textSecondary,
+                ),
+                child: Text(text),
+              ),
+            ],
           ),
         ],
       ),
@@ -135,49 +191,5 @@ class _SpendingChartState extends State<SpendingPieChart> {
         ),
       );
     });
-  }
-}
-
-class _Indicator extends StatelessWidget {
-  final Color color;
-  final String text;
-  final bool isSquare;
-  final Color? textColor;
-
-  const _Indicator({
-    required this.color,
-    required this.text,
-    required this.isSquare,
-    this.textColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              shape: isSquare ? BoxShape.rectangle : BoxShape.circle,
-              color: color,
-              borderRadius: isSquare ? BorderRadius.circular(2) : null,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: textColor,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
