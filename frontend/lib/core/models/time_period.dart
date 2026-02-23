@@ -1,7 +1,7 @@
 enum TimePeriod {
-  week("WEEK"),
-  month("MONTH"),
-  year("YEAR");
+  week("Past week"),
+  month("Past month"),
+  year("");
 
   final String label;
 

@@ -24,45 +24,86 @@ class TransactionCard extends StatelessWidget {
       splashColor: Colors.blue.withAlpha(30),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(8),
         child: Column(
           children: <Widget>[
             Row(
               children: <Widget>[
                 Expanded(
                   child: ListTile(
+                    dense: true,
                     contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isIncome
+                            ? Color.lerp(AppColors.income, Colors.white, 0.75)
+                            : AppColors.softBlue,
+                        borderRadius: BorderRadius.circular(12.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey,
+                            blurRadius: 0.25,
+                            offset: Offset(0.25, 1.25),
+                            spreadRadius: 0.15,
+                          ),
+                        ],
+                      ),
+                      child: RotatedBox(
+                        quarterTurns: isIncome ? 2 : 0,
+                        child: Icon(
+                          Icons.arrow_outward,
+                          color: isIncome ? AppColors.income : AppColors.navy,
+                          size: 20,
+                        ),
+                      ),
+                    ),
                     title: Text(
-                      formatDate(transaction.executionDate),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      transaction.cleanTitle,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: AppColors.navy,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
                     ),
                     subtitle: Row(
                       children: [
-                        Icon(
-                          transaction.category.icon,
-                          size: 16,
-                          color: AppColors.navy,
-                        ),
+                        Icon(transaction.category.icon, size: 14),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            transaction.description,
-                            overflow: TextOverflow.ellipsis,
+                            formatDate(transaction.executionDate),
                             maxLines: 1,
+                            style: const TextStyle(fontSize: 12),
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-
-                Text(
-                  "${isIncome ? '+' : '-'}${amount.abs().toStringAsFixed(2)}",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: isIncome ? AppColors.income : AppColors.expense,
-                  ),
+                SizedBox(width: 24),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      "${isIncome ? '+' : '-'}${amount.abs().toStringAsFixed(2)}",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: isIncome ? AppColors.income : AppColors.expense,
+                      ),
+                    ),
+                    Text(
+                      transaction.currency,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
                 Padding(
                   padding: EdgeInsets.only(left: 4),
@@ -116,13 +157,17 @@ class TransactionCard extends StatelessWidget {
               style: const TextStyle(
                 fontWeight: FontWeight.w600,
                 color: Colors.grey,
+                fontSize: 12,
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontWeight: FontWeight.normal),
+              style: const TextStyle(
+                fontWeight: FontWeight.normal,
+                fontSize: 12,
+              ),
             ),
           ),
         ],

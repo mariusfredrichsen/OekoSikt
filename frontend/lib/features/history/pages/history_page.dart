@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/models/transaction.dart';
 import 'package:frontend/core/models/transaction_categories.dart';
 import 'package:frontend/core/models/transaction_direction.dart';
-import 'package:frontend/features/history/widgets/activity_filter_bar.dart';
-import 'package:frontend/features/history/widgets/activity_transaction_list.dart';
+import 'package:frontend/features/history/widgets/history_filter_bar.dart';
+import 'package:frontend/features/history/widgets/transaction_list.dart';
 
 class HistoryPage extends StatefulWidget {
   final List<Transaction> transactions;
@@ -16,6 +16,7 @@ class HistoryPage extends StatefulWidget {
 class _HistoryPageState extends State<HistoryPage> {
   TransactionDirection _selectedDirection = TransactionDirection.all;
   TransactionCategory _selectedCategory = TransactionCategory.all;
+  String _searchQuery = "";
   int? _expandedIndex;
 
   List<Transaction> get _filteredTransactions {
@@ -28,7 +29,11 @@ class _HistoryPageState extends State<HistoryPage> {
       final matchCat =
           _selectedCategory == TransactionCategory.all ||
           t.category == _selectedCategory;
-      return matchDir && matchCat;
+      final matchQuery = t.cleanTitle.toLowerCase().contains(
+        _searchQuery.toLowerCase(),
+      );
+
+      return matchDir && matchCat && matchQuery;
     }).toList();
   }
 
@@ -36,25 +41,32 @@ class _HistoryPageState extends State<HistoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Transaction History")),
-      body: Column(
-        children: [
-          FilterBar(
-            selectedDirection: _selectedDirection,
-            selectedCategory: _selectedCategory,
-            onDirectionChanged: (dir) =>
-                setState(() => _selectedDirection = dir),
-            onCategoryChanged: (cat) => setState(() => _selectedCategory = cat),
-          ),
-          Expanded(
-            child: TransactionList(
-              transactions: _filteredTransactions,
-              expandedIndex: _expandedIndex,
-              onTransactionTapped: (idx) => setState(
-                () => _expandedIndex = (_expandedIndex == idx ? null : idx),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          children: [
+            HistoryFilterBar(
+              selectedDirection: _selectedDirection,
+              selectedCategory: _selectedCategory,
+              searchQuery: _searchQuery,
+              onDirectionChanged: (dir) =>
+                  setState(() => _selectedDirection = dir),
+              onCategoryChanged: (cat) =>
+                  setState(() => _selectedCategory = cat),
+              onSearchQueryChanged: (query) =>
+                  setState(() => _searchQuery = query),
+            ),
+            Expanded(
+              child: TransactionList(
+                transactions: _filteredTransactions,
+                expandedIndex: _expandedIndex,
+                onTransactionTapped: (idx) => setState(
+                  () => _expandedIndex = (_expandedIndex == idx ? null : idx),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

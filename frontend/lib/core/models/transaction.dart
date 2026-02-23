@@ -106,4 +106,23 @@ class Transaction {
       category: TransactionCategory.fromString(categoryRaw),
     );
   }
+
+  String get cleanTitle {
+    // 1. Get the raw description (assuming your model has a 'description' field)
+    String rawName = description;
+
+    // 2. Remove leading dates like "05.02 " or "31.12 "
+    // \d{2}\.\d{2}\s+ looks for two digits, a dot, two digits, and a space at the start
+    rawName = rawName.replaceAll(RegExp(r'^\d{2}\.\d{2}\s+'), '');
+
+    // 3. Remove parentheses with numbers inside like " (12242602267)"
+    // \s*\(\d+\) looks for optional spaces followed by numbers in parentheses
+    rawName = rawName.replaceAll(RegExp(r'\s*\(\d+\)'), '');
+
+    // 4. Remove common prefixes like "Vipps*" or "ZETTLE_*"
+    rawName = rawName.replaceAll(RegExp(r'^(Vipps\*|ZETTLE_\*|DNH\*)'), '');
+
+    // 5. Trim any leftover white spaces from the beginning or end
+    return rawName.trim();
+  }
 }

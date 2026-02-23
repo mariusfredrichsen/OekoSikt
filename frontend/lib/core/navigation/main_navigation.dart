@@ -5,7 +5,7 @@ import 'package:frontend/core/services/transaction_service.dart';
 import 'package:frontend/core/theme/app_colors.dart';
 import 'package:frontend/features/history/pages/history_page.dart';
 import 'package:frontend/features/home/pages/home_page.dart';
-import 'package:frontend/features/spendings/pages/spending_page.dart';
+import 'package:frontend/features/spending/pages/spending_page.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/core/models/transaction_categories.dart';
 import 'package:frontend/core/models/transaction_category_summary.dart';
 import 'package:frontend/core/theme/app_colors.dart';
 
