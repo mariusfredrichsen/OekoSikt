@@ -28,29 +28,68 @@ class _SpendingChartState extends State<SpendingPieChart> {
         children: <Widget>[
           Expanded(
             child: AspectRatio(
-              aspectRatio: 1, // Changed from 1.5 to 1 to remove side gaps
-              child: PieChart(
-                PieChartData(
-                  pieTouchData: PieTouchData(
-                    touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                      setState(() {
-                        if (!event.isInterestedForInteractions ||
-                            pieTouchResponse == null ||
-                            pieTouchResponse.touchedSection == null) {
-                          touchedIndex = -1;
-                          return;
-                        }
-                        touchedIndex = pieTouchResponse
-                            .touchedSection!
-                            .touchedSectionIndex;
-                      });
-                    },
+              aspectRatio: 1,
+              child: Stack(
+                children: [
+                  PieChart(
+                    PieChartData(
+                      pieTouchData: PieTouchData(
+                        touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                          setState(() {
+                            if (!event.isInterestedForInteractions ||
+                                pieTouchResponse == null ||
+                                pieTouchResponse.touchedSection == null) {
+                              touchedIndex = -1;
+                              return;
+                            }
+                            touchedIndex = pieTouchResponse
+                                .touchedSection!
+                                .touchedSectionIndex;
+                          });
+                        },
+                      ),
+                      borderData: FlBorderData(show: false),
+                      sectionsSpace: 2,
+                      centerSpaceRadius: 55,
+                      sections: _showingSections(),
+                    ),
                   ),
-                  borderData: FlBorderData(show: false),
-                  sectionsSpace: 2,
-                  centerSpaceRadius: 35,
-                  sections: _showingSections(),
-                ),
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "TOTAL",
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 8,
+                          ),
+                        ),
+                        Text(
+                          widget.categorySummaries
+                              .fold(0.0, (prev, cat) {
+                                return prev + cat.categorySum * -1;
+                              })
+                              .toStringAsFixed(0),
+                          style: TextStyle(
+                            color: AppColors.navy,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 24,
+                          ),
+                        ),
+                        Text(
+                          "NOK",
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 8,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -62,7 +101,7 @@ class _SpendingChartState extends State<SpendingPieChart> {
               return _Indicator(
                 color: summary.category.color,
                 text: summary.category.label,
-                isSquare: true,
+                isSquare: false,
                 textColor:
                     touchedIndex == widget.categorySummaries.indexOf(summary)
                     ? AppColors.navy
@@ -79,8 +118,8 @@ class _SpendingChartState extends State<SpendingPieChart> {
     return List.generate(widget.categorySummaries.length, (i) {
       final summary = widget.categorySummaries[i];
       final isTouched = i == touchedIndex;
-      final fontSize = isTouched ? 16.0 : 12.0;
-      final radius = isTouched ? 60.0 : 50.0;
+      final fontSize = isTouched ? 14.0 : 10.0;
+      final radius = isTouched ? 45.0 : 35.0;
 
       final double percentage = (summary.categorySum / summary.totalSum) * 100;
 
@@ -115,9 +154,7 @@ class _Indicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: 2,
-      ), // Minimal spacing for readability
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/models/filter_state.dart';
 import 'package:frontend/core/models/transaction.dart';
 import 'package:frontend/core/models/transaction_categories.dart';
 import 'package:frontend/core/models/transaction_direction.dart';
 import 'package:frontend/features/history/widgets/history_filter_bar.dart';
 import 'package:frontend/features/history/widgets/transaction_list.dart';
+import 'package:frontend/features/spending/widgets/spending_scope_filter.dart';
 
 class HistoryPage extends StatefulWidget {
   final List<Transaction> transactions;
@@ -14,31 +16,13 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-  TransactionDirection _selectedDirection = TransactionDirection.all;
-  TransactionCategory _selectedCategory = TransactionCategory.all;
-  String _searchQuery = "";
   int? _expandedIndex;
-
-  List<Transaction> get _filteredTransactions {
-    return widget.transactions.where((t) {
-      final matchDir =
-          _selectedDirection == TransactionDirection.all ||
-          (_selectedDirection == TransactionDirection.outcome
-              ? t.amountOut != null
-              : t.amountIn != null);
-      final matchCat =
-          _selectedCategory == TransactionCategory.all ||
-          t.category == _selectedCategory;
-      final matchQuery = t.cleanTitle.toLowerCase().contains(
-        _searchQuery.toLowerCase(),
-      );
-
-      return matchDir && matchCat && matchQuery;
-    }).toList();
-  }
+  FilterState _filters = FilterState(scope: FilterScope.all);
 
   @override
   Widget build(BuildContext context) {
+    final filteredTransactions = _filters.applyFilter(widget.transactions);
+
     return Scaffold(
       appBar: AppBar(title: const Text("Transaction History")),
       body: Padding(
@@ -46,19 +30,20 @@ class _HistoryPageState extends State<HistoryPage> {
         child: Column(
           children: [
             HistoryFilterBar(
-              selectedDirection: _selectedDirection,
-              selectedCategory: _selectedCategory,
-              searchQuery: _searchQuery,
+              selectedDirection: _filters.direction,
+              selectedCategory: _filters.category,
+              searchQuery: _filters.searchQuery,
               onDirectionChanged: (dir) =>
-                  setState(() => _selectedDirection = dir),
+                  setState(() => _filters = _filters.copyWith(direction: dir)),
               onCategoryChanged: (cat) =>
-                  setState(() => _selectedCategory = cat),
-              onSearchQueryChanged: (query) =>
-                  setState(() => _searchQuery = query),
+                  setState(() => _filters = _filters.copyWith(category: cat)),
+              onSearchQueryChanged: (query) => setState(
+                () => _filters = _filters.copyWith(searchQuery: query),
+              ),
             ),
             Expanded(
               child: TransactionList(
-                transactions: _filteredTransactions,
+                transactions: filteredTransactions,
                 expandedIndex: _expandedIndex,
                 onTransactionTapped: (idx) => setState(
                   () => _expandedIndex = (_expandedIndex == idx ? null : idx),

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/core/models/time_period.dart';
 import 'package:frontend/core/models/transaction.dart';
 import 'package:frontend/core/models/transaction_categories.dart';
 import 'package:frontend/core/models/transaction_category_summary.dart';
+import 'package:frontend/core/models/filter_state.dart';
 import 'package:frontend/core/theme/app_colors.dart';
 import 'package:frontend/features/spending/widgets/spending_bar_chart.dart';
-import 'package:frontend/features/spending/widgets/spending_filter_bar.dart';
+import 'package:frontend/features/spending/widgets/spending_period_filter.dart';
 import 'package:frontend/features/spending/widgets/spending_pie_chart.dart';
+import 'package:frontend/features/spending/widgets/spending_scope_filter.dart';
 
 class SpendingPage extends StatefulWidget {
   final List<Transaction> transactions;
@@ -17,13 +18,14 @@ class SpendingPage extends StatefulWidget {
 }
 
 class _SpendingPageState extends State<SpendingPage> {
-  TimePeriod _selectedPeriod = TimePeriod.month;
-  late List<TransactionCategorySummary> categorySummaries = _createSummaries(
-    widget.transactions,
-  );
+  FilterState _filters = FilterState(scope: FilterScope.month);
 
   @override
   Widget build(BuildContext context) {
+    List<TransactionCategorySummary> categorySummaries = _createSummaries(
+      widget.transactions,
+    );
+
     return Scaffold(
       appBar: AppBar(title: const Text("Spending Insights")),
       body: SingleChildScrollView(
@@ -31,47 +33,34 @@ class _SpendingPageState extends State<SpendingPage> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              SpendingFilterBar(
-                selectedPeriod: _selectedPeriod,
-                onTimePeriodChanged: (period) => {
-                  setState(() => _selectedPeriod = period),
+              ScopeFilter(
+                selectedScope: _filters.scope,
+                onScopeChanged: (scope) => {
+                  setState(
+                    () => _filters = _filters.copyWith(
+                      scope: scope,
+                      referenceDate: DateTime.now(),
+                    ),
+                  ),
                 },
               ),
-
               Card(
                 child: Container(
                   padding: EdgeInsets.all(12),
                   child: Column(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "SPENDING BY CATEGORY",
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.navy,
+                      PeriodFilter(
+                        scope: _filters.scope,
+                        referenceDate: _filters.referenceDate,
+                        onReferenceDateChanged: (period) => {
+                          setState(
+                            () => _filters = _filters.copyWith(
+                              referenceDate: period,
                             ),
                           ),
-
-                          Text(
-                            "${categorySummaries.fold<double>(0, (prev, cs) => prev + cs.categorySum)}\$",
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.navy,
-                            ),
-                          ),
-                        ],
+                        },
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Divider(color: AppColors.divider, thickness: 2),
-                      ),
-                      const SizedBox(height: 20),
                       SpendingPieChart(categorySummaries: categorySummaries),
-                      const SizedBox(height: 20),
                       SpendingBarChart(categorySummaries: categorySummaries),
                     ],
                   ),
@@ -87,12 +76,15 @@ class _SpendingPageState extends State<SpendingPage> {
   List<TransactionCategorySummary> _createSummaries(
     List<Transaction> transactions,
   ) {
-    List<Transaction> filteredTransactions = transactions.where((t) {
-      return t.category != TransactionCategory.transfer;
-    }).toList();
+    List<Transaction> filteredTransactions = _filters
+        .applyFilter(transactions)
+        .where((t) {
+          return t.category != TransactionCategory.transfer;
+        })
+        .toList();
     double total = filteredTransactions.fold(
       0,
-      (sum, item) => sum + (item.amountOut ?? 0),
+      (prev, t) => prev + (t.amountOut ?? 0),
     );
 
     Map<TransactionCategory, double> grouped = {};
