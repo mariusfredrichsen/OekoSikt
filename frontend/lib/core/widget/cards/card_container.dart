@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/theme/app_colors.dart';
 
 class CardContainer extends StatelessWidget {
   final Color? color;
@@ -21,7 +22,10 @@ class CardContainer extends StatelessWidget {
     return Card(
       color: color,
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey, width: 2),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

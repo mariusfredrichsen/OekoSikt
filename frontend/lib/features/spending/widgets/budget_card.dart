@@ -5,7 +5,7 @@ import 'package:frontend/core/theme/app_colors.dart';
 import 'package:frontend/core/widget/bar/budget_bar.dart';
 import 'package:frontend/core/widget/cards/card_container.dart';
 import 'package:frontend/core/widget/labels/budget_tracking.dart';
-import 'package:frontend/features/spending/widgets/spending_budget_dialog.dart';
+import 'package:frontend/features/spending/pages/budget_page.dart';
 
 class BudgetCard extends StatelessWidget {
   final Budget budget;
@@ -57,10 +57,12 @@ class BudgetCard extends StatelessWidget {
         elevation: 0,
       ),
       onPressed: () async {
-        final double? result = await showDialog<double>(
-          context: context,
-          builder: (context) =>
-              BudgetDialog(currentSpending: spent, currentBudget: limit),
+        final double? result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                BudgetPage(currentSpending: spent, currentBudget: limit),
+          ),
         );
         if (result != null) onBudgetUpdated(result);
       },

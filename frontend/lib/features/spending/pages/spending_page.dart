@@ -6,7 +6,7 @@ import 'package:frontend/core/models/transaction_category_summary.dart';
 import 'package:frontend/core/models/filter_state.dart';
 import 'package:frontend/core/services/budget_service.dart';
 import 'package:frontend/features/spending/widgets/spending_bar_chart.dart';
-import 'package:frontend/features/spending/widgets/spending_budget_card.dart';
+import 'package:frontend/features/spending/widgets/budget_card.dart';
 import 'package:frontend/features/spending/widgets/spending_period_filter.dart';
 import 'package:frontend/features/spending/widgets/spending_pie_chart.dart';
 import 'package:frontend/features/spending/widgets/spending_scope_filter.dart';

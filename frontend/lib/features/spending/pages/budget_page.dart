@@ -6,21 +6,21 @@ import 'package:frontend/core/widget/cards/card_container.dart';
 import 'package:frontend/core/widget/icons/icon_container.dart';
 import 'package:frontend/core/widget/labels/budget_tracking.dart';
 
-class BudgetDialog extends StatefulWidget {
+class BudgetPage extends StatefulWidget {
   final double currentSpending;
   final double currentBudget;
 
-  const BudgetDialog({
+  const BudgetPage({
     super.key,
     required this.currentSpending,
     required this.currentBudget,
   });
 
   @override
-  State<StatefulWidget> createState() => _BudgetDialogState();
+  State<StatefulWidget> createState() => _BudgetPageState();
 }
 
-class _BudgetDialogState extends State<BudgetDialog> {
+class _BudgetPageState extends State<BudgetPage> {
   late double _newBudget;
   late TextEditingController _amountController;
 
@@ -57,52 +57,72 @@ class _BudgetDialogState extends State<BudgetDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: AppColors.background,
-      insetPadding: const EdgeInsets.all(16),
-      title: _buildTitle(),
-      content: SizedBox(
-        width: MediaQuery.of(context).size.width,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 16,
-            children: [
-              _buildBudgetPreview(),
-              _buildQuickSelect(),
-              _buildSlider(),
-              _buildInputField(),
-            ],
-          ),
+    return Scaffold(
+      appBar: AppBar(
+        actions: [],
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: AppColors.background),
+          onPressed: () {
+            Navigator.maybePop(context);
+          },
         ),
+        title: Text("Edit Budget"),
       ),
-      actions: [
-        Row(
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text("CANCEL"),
+            SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 16,
+                children: [
+                  _buildBudgetPreview(),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        spacing: 16,
+                        children: [
+                          _buildQuickSelect(),
+                          _buildSlider(),
+                          _buildInputField(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.navy,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text("CANCEL"),
                   ),
                 ),
-                onPressed: () => Navigator.of(context).pop(_newBudget),
-                child: const Text("SAVE"),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.navy,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(_newBudget),
+                    child: const Text("SAVE"),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 
@@ -165,52 +185,90 @@ class _BudgetDialogState extends State<BudgetDialog> {
     );
   }
 
+  Widget _buildSubTitle(String subTitle) {
+    return Text(
+      subTitle,
+      style: TextStyle(
+        color: AppColors.textSecondary,
+        fontWeight: FontWeight.w700,
+        fontSize: 10,
+      ),
+    );
+  }
+
   Widget _buildSlider() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 4,
       children: [
-        const Text(
-          "ADJUST WITH SLIDER",
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w700,
-            fontSize: 10,
-          ),
-        ),
+        _buildSubTitle("ADJUST WITH SLIDER"),
         Slider(
+          padding: EdgeInsets.symmetric(horizontal: 16),
           value: _newBudget.clamp(1000.0, 50000.0),
+          label: _newBudget.toStringAsFixed(0),
           min: 1000,
           max: 50000,
           divisions: 98,
           onChanged: _setBudgetFromUI,
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(3, (index) {
+              return Text(
+                switch (index) {
+                  0 => "1K",
+                  1 => "25K",
+                  2 => "50K",
+                  int() => "",
+                },
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              );
+            }),
+          ),
         ),
       ],
     );
   }
 
   Widget _buildQuickSelect() {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 3,
-      mainAxisSpacing: 8,
-      crossAxisSpacing: 8,
-      childAspectRatio: 2.5,
-      children: [5000, 7500, 10000, 15000, 20000, 30000].map((val) {
-        bool selected = _newBudget == val.toDouble();
-        return ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: selected ? AppColors.navy : AppColors.divider,
-            foregroundColor: selected ? Colors.white : AppColors.navy,
-            elevation: 0,
-          ),
-          onPressed: () => _setBudgetFromUI(val.toDouble()),
-          child: Text(
-            "${val ~/ 1000}K",
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-          ),
-        );
-      }).toList(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 4,
+      children: [
+        _buildSubTitle("QUICK SELECT"),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 3,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 3,
+          children: [5000, 7500, 10000, 15000, 20000, 30000].map((val) {
+            bool selected = _newBudget == val.toDouble();
+            return ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: selected ? AppColors.navy : AppColors.divider,
+                foregroundColor: selected ? Colors.white : AppColors.navy,
+                elevation: 0,
+              ),
+              onPressed: () => _setBudgetFromUI(val.toDouble()),
+              child: Text(
+                "${val ~/ 1000}K",
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
