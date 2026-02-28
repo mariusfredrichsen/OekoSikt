@@ -4,23 +4,32 @@ import 'package:frontend/core/theme/app_colors.dart';
 
 class SpendingBarChart extends StatelessWidget {
   final List<TransactionCategorySummary> categorySummaries;
-  const SpendingBarChart({super.key, required this.categorySummaries});
+  final int touchedIndex;
+
+  const SpendingBarChart({
+    super.key,
+    required this.categorySummaries,
+    required this.touchedIndex,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: [
-        ...categorySummaries.map(
-          (cat) => Container(
-            margin: EdgeInsets.symmetric(vertical: 4),
-            child: _buildSpendingBar(cat),
-          ),
-        ),
-      ],
+      children: List.generate(categorySummaries.length, (index) {
+        TransactionCategorySummary summary = categorySummaries[index];
+
+        return Container(
+          margin: EdgeInsets.symmetric(vertical: 4),
+          child: _buildSpendingBar(summary, touchedIndex == index),
+        );
+      }),
     );
   }
 
-  Widget _buildSpendingBar(TransactionCategorySummary categorySummary) {
+  Widget _buildSpendingBar(
+    TransactionCategorySummary categorySummary,
+    bool isSelected,
+  ) {
     return Column(
       children: [
         Row(
@@ -42,8 +51,10 @@ class SpendingBarChart extends StatelessWidget {
             value: categorySummary.categorySum / categorySummary.totalSum,
             minHeight: 12,
             backgroundColor: AppColors.divider,
-            valueColor: AlwaysStoppedAnimation<Color>(
-              categorySummary.category.color,
+            valueColor: AlwaysStoppedAnimation<Color?>(
+              touchedIndex == -1 || isSelected
+                  ? categorySummary.category.color
+                  : Colors.grey,
             ),
           ),
         ),

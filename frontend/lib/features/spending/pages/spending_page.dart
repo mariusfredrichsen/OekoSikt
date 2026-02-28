@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/models/budget.dart';
 import 'package:frontend/core/models/transaction.dart';
 import 'package:frontend/core/models/transaction_categories.dart';
 import 'package:frontend/core/models/transaction_category_summary.dart';
 import 'package:frontend/core/models/filter_state.dart';
-import 'package:frontend/core/theme/app_colors.dart';
+import 'package:frontend/core/services/budget_service.dart';
 import 'package:frontend/features/spending/widgets/spending_bar_chart.dart';
+import 'package:frontend/features/spending/widgets/spending_budget_card.dart';
 import 'package:frontend/features/spending/widgets/spending_period_filter.dart';
 import 'package:frontend/features/spending/widgets/spending_pie_chart.dart';
 import 'package:frontend/features/spending/widgets/spending_scope_filter.dart';
+import 'package:frontend/utils/date_extention.dart';
 
 class SpendingPage extends StatefulWidget {
   final List<Transaction> transactions;
@@ -19,9 +22,68 @@ class SpendingPage extends StatefulWidget {
 
 class _SpendingPageState extends State<SpendingPage> {
   FilterState _filters = FilterState(scope: FilterScope.month);
+  List<Budget> _allBudgets = [];
+  bool _isLoading = true;
+  String? _errorMessage = "";
+  int touchedIndex = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    try {
+      final data = await BudgetService.loadMonthlyBudgets();
+      setState(() {
+        _allBudgets = data;
+        _isLoading = false;
+        _errorMessage = null;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load transactions: $e';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) return _buildLoadingView();
+    if (_errorMessage != null) return _buildErrorView();
+    return _buildMainBody();
+  }
+
+  Widget _buildLoadingView() {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+  }
+
+  Widget _buildErrorView() {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(_errorMessage!),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                setState(() => _isLoading = true);
+                _fetchData();
+              },
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Scaffold _buildMainBody() {
     List<TransactionCategorySummary> categorySummaries = _createSummaries(
       widget.transactions,
     );
@@ -32,6 +94,7 @@ class _SpendingPageState extends State<SpendingPage> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
+            spacing: 4,
             children: [
               ScopeFilter(
                 selectedScope: _filters.scope,
@@ -46,8 +109,9 @@ class _SpendingPageState extends State<SpendingPage> {
               ),
               Card(
                 child: Container(
-                  padding: EdgeInsets.all(12),
+                  padding: EdgeInsets.all(16),
                   child: Column(
+                    spacing: 16,
                     children: [
                       PeriodFilter(
                         scope: _filters.scope,
@@ -60,8 +124,35 @@ class _SpendingPageState extends State<SpendingPage> {
                           ),
                         },
                       ),
-                      SpendingPieChart(categorySummaries: categorySummaries),
-                      SpendingBarChart(categorySummaries: categorySummaries),
+                      if (_filters.scope == FilterScope.month)
+                        BudgetCard(
+                          budget: _allBudgets.firstWhere(
+                            (b) => b.month.isSameMonth(_filters.referenceDate),
+                          ),
+                          summaries: categorySummaries,
+                          onBudgetUpdated: (newLimit) {
+                            setState(() {
+                              int index = _allBudgets.indexWhere(
+                                (b) =>
+                                    b.month.isSameMonth(_filters.referenceDate),
+                              );
+                              if (index != -1) {
+                                _allBudgets[index] = _allBudgets[index]
+                                    .copyWith(totalLimit: newLimit);
+                              }
+                            });
+                          },
+                        ),
+                      SpendingPieChart(
+                        categorySummaries: categorySummaries,
+                        touchedIndex: touchedIndex,
+                        onTouchedIndexChanged: (index) =>
+                            setState(() => touchedIndex = index),
+                      ),
+                      SpendingBarChart(
+                        categorySummaries: categorySummaries,
+                        touchedIndex: touchedIndex,
+                      ),
                     ],
                   ),
                 ),

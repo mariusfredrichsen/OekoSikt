@@ -2,7 +2,7 @@ import 'package:frontend/core/models/transaction.dart';
 import 'package:frontend/core/models/transaction_categories.dart';
 import 'package:frontend/core/models/transaction_direction.dart';
 
-enum FilterScope { month, year, all } // Added 'all'
+enum FilterScope { month, year, all }
 
 class FilterState {
   final TransactionDirection direction;
@@ -14,7 +14,7 @@ class FilterState {
   FilterState({
     this.direction = TransactionDirection.all,
     this.category = TransactionCategory.all,
-    this.scope = FilterScope.month, // Default for Spending
+    this.scope = FilterScope.month,
     this.searchQuery = "",
     DateTime? referenceDate,
   }) : referenceDate =

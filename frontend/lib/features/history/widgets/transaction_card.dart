@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/models/transaction.dart';
 import 'package:frontend/core/theme/app_colors.dart';
+import 'package:frontend/core/widget/icons/icon_container.dart';
 import 'package:frontend/utils/format_date.dart';
 
 class TransactionCard extends StatelessWidget {
@@ -33,22 +34,10 @@ class TransactionCard extends StatelessWidget {
                   child: ListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    leading: Container(
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: isIncome
-                            ? Color.lerp(AppColors.income, Colors.white, 0.75)
-                            : AppColors.softBlue,
-                        borderRadius: BorderRadius.circular(12.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey,
-                            blurRadius: 0.25,
-                            offset: Offset(0.25, 1.25),
-                            spreadRadius: 0.15,
-                          ),
-                        ],
-                      ),
+                    leading: IconContainer(
+                      color: isIncome
+                          ? Color.lerp(AppColors.income, Colors.white, 0.75)
+                          : AppColors.softBlue,
                       child: RotatedBox(
                         quarterTurns: isIncome ? 2 : 0,
                         child: Icon(

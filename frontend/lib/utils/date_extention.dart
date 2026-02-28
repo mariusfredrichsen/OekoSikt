@@ -29,4 +29,8 @@ extension DateNavigation on DateTime {
     ];
     return "${months[month]} $year";
   }
+
+  bool isSameMonth(DateTime other) {
+    return other.month == month && other.year == year;
+  }
 }

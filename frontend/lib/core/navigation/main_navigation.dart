@@ -44,12 +44,10 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    // If loading or error, show a simple scaffold with the state
     if (_isLoading) return _buildLoadingView();
     if (_errorMessage != null) return _buildErrorView();
     if (_allTransactions.isEmpty) return _buildIsEmptyView();
 
-    // Otherwise, show the main navigation shell
     return Scaffold(
       body: IndexedStack(
         index: _currentItem.index,

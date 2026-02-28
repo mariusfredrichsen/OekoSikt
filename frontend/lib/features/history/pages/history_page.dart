@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/models/filter_state.dart';
 import 'package:frontend/core/models/transaction.dart';
-import 'package:frontend/core/models/transaction_categories.dart';
-import 'package:frontend/core/models/transaction_direction.dart';
 import 'package:frontend/features/history/widgets/history_filter_bar.dart';
 import 'package:frontend/features/history/widgets/transaction_list.dart';
-import 'package:frontend/features/spending/widgets/spending_scope_filter.dart';
 
 class HistoryPage extends StatefulWidget {
   final List<Transaction> transactions;
