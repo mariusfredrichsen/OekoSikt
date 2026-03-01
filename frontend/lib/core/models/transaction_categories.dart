@@ -51,4 +51,15 @@ enum TransactionCategory {
       orElse: () => TransactionCategory.other,
     );
   }
+
+  static List<TransactionCategory> get expenseCategories {
+    return TransactionCategory.values
+        .where(
+          (cat) => !{
+            TransactionCategory.all,
+            TransactionCategory.income,
+          }.contains(cat),
+        )
+        .toList();
+  }
 }

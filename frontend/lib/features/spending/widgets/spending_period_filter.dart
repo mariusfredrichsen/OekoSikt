@@ -59,7 +59,7 @@ class PeriodFilter extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.grey.withAlpha(40),
+                        color: AppColors.navy,
                         borderRadius: BorderRadius.circular(12),
                       ),
 
@@ -68,7 +68,7 @@ class PeriodFilter extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 8,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary,
+                          color: AppColors.background,
                         ),
                       ),
                     )
@@ -96,7 +96,7 @@ class PeriodFilter extends StatelessWidget {
       width: 32,
       height: 32,
       child: Material(
-        color: Colors.grey.withAlpha(enabled ? 50 : 5),
+        color: AppColors.gray200.withAlpha(enabled ? 200 : 20),
         shape: const CircleBorder(),
         clipBehavior: Clip.hardEdge,
         child: InkWell(

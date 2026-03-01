@@ -14,7 +14,11 @@ class BudgetTracking extends StatelessWidget {
         icon: Icons.trending_up,
       );
     } else if (value >= 0.8) {
-      return (label: "WATCH IT", color: Colors.orange, icon: Icons.trending_up);
+      return (
+        label: "WATCH IT",
+        color: AppColors.amber500,
+        icon: Icons.trending_up,
+      );
     } else {
       return (
         label: "ON TRACK",

@@ -15,12 +15,12 @@ class SpendingBarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      spacing: 6,
       children: List.generate(categorySummaries.length, (index) {
-        TransactionCategorySummary summary = categorySummaries[index];
-
-        return Container(
-          margin: EdgeInsets.symmetric(vertical: 4),
-          child: _buildSpendingBar(summary, touchedIndex == index),
+        return _buildSpendingBar(
+          categorySummaries[index],
+          touchedIndex == index,
+          touchedIndex != -1,
         );
       }),
     );
@@ -29,32 +29,56 @@ class SpendingBarChart extends StatelessWidget {
   Widget _buildSpendingBar(
     TransactionCategorySummary categorySummary,
     bool isSelected,
+    bool otherSelected,
   ) {
-    return Column(
+    final color = touchedIndex == -1 || isSelected
+        ? categorySummary.category.color
+        : AppColors.gray300;
+
+    return Row(
+      spacing: 8,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              categorySummary.category.label,
-              style: TextStyle(color: AppColors.navy, fontSize: 12),
+        SizedBox(
+          width: 72,
+          child: Text(
+            categorySummary.category.label,
+            style: TextStyle(
+              color: isSelected
+                  ? AppColors.navy
+                  : otherSelected
+                  ? AppColors.textSecondary
+                  : AppColors.gray500,
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
             ),
-            Text(
-              "${categorySummary.categorySum.toStringAsFixed(1)} kr",
-              style: TextStyle(color: AppColors.navy, fontSize: 12),
-            ),
-          ],
+          ),
         ),
-        ClipRRect(
-          borderRadius: BorderRadiusGeometry.circular(8),
-          child: LinearProgressIndicator(
-            value: categorySummary.categorySum / categorySummary.totalSum,
-            minHeight: 12,
-            backgroundColor: AppColors.divider,
-            valueColor: AlwaysStoppedAnimation<Color?>(
-              touchedIndex == -1 || isSelected
-                  ? categorySummary.category.color
-                  : Colors.grey,
+
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: categorySummary.categorySum / categorySummary.totalSum,
+              minHeight: 8,
+              backgroundColor: AppColors.divider,
+              valueColor: AlwaysStoppedAnimation<Color?>(color),
+            ),
+          ),
+        ),
+
+        SizedBox(
+          width: 72,
+          child: Text(
+            "${categorySummary.categorySum.toStringAsFixed(1)} kr",
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color: isSelected
+                  ? AppColors.navy
+                  : otherSelected
+                  ? AppColors.textSecondary
+                  : AppColors.navy,
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
             ),
           ),
         ),

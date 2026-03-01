@@ -83,7 +83,7 @@ class _HistoryFilterBarState extends State<HistoryFilterBar> {
         boxShadow: _searchFocusNode.hasFocus
             ? [
                 BoxShadow(
-                  color: AppColors.navy.withAlpha(50),
+                  color: AppColors.navy.withAlpha(75),
                   blurRadius: 8,
                   spreadRadius: 1,
                 ),
@@ -206,7 +206,7 @@ class _HistoryFilterBarState extends State<HistoryFilterBar> {
                 labelStyle: TextStyle(
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                  color: isSelected ? AppColors.surface : AppColors.textPrimary,
                 ),
                 selected: isSelected,
                 onSelected: (_) => widget.onCategoryChanged(cat),

@@ -10,6 +10,7 @@ class FilterState {
   final FilterScope scope;
   final DateTime referenceDate;
   final String searchQuery;
+  final Set<TransactionCategory> categoryFilter;
 
   FilterState({
     this.direction = TransactionDirection.all,
@@ -17,8 +18,11 @@ class FilterState {
     this.scope = FilterScope.month,
     this.searchQuery = "",
     DateTime? referenceDate,
+    Set<TransactionCategory>? categoryFilter,
   }) : referenceDate =
-           referenceDate ?? DateTime(DateTime.now().year, DateTime.now().month);
+           referenceDate ?? DateTime(DateTime.now().year, DateTime.now().month),
+       categoryFilter =
+           categoryFilter ?? {...TransactionCategory.expenseCategories};
 
   FilterState copyWith({
     TransactionDirection? direction,
@@ -26,6 +30,7 @@ class FilterState {
     FilterScope? scope,
     DateTime? referenceDate,
     String? searchQuery,
+    Set<TransactionCategory>? categoryFilter,
   }) {
     return FilterState(
       direction: direction ?? this.direction,
@@ -33,30 +38,26 @@ class FilterState {
       scope: scope ?? this.scope,
       referenceDate: referenceDate ?? this.referenceDate,
       searchQuery: searchQuery ?? this.searchQuery,
+      categoryFilter: categoryFilter ?? this.categoryFilter,
     );
   }
 
   List<Transaction> applyFilter(List<Transaction> transactions) {
     return transactions.where((t) {
-      // 1. Direction Filter
       final bool matchDir =
           direction == TransactionDirection.all ||
           (direction == TransactionDirection.outcome
               ? t.amountOut != null
               : t.amountIn != null);
 
-      // 2. Category Filter
       final bool matchCat =
           category == TransactionCategory.all || t.category == category;
 
-      // 3. Search Query Filter
       final bool matchQuery = t.cleanTitle.toLowerCase().contains(
         searchQuery.toLowerCase(),
       );
 
-      // 4. Time Filter (Now includes 'all' check)
-      bool matchDate =
-          true; // Default to true so it doesn't block if scope is 'all'
+      bool matchDate = true;
 
       if (scope == FilterScope.year) {
         matchDate = t.executionDate.year == referenceDate.year;
@@ -65,9 +66,14 @@ class FilterState {
             t.executionDate.year == referenceDate.year &&
             t.executionDate.month == referenceDate.month;
       }
-      // If scope is FilterScope.all, matchDate stays true.
 
-      return matchDir && matchCat && matchQuery && matchDate;
+      final bool matchCategoryList = categoryFilter.contains(t.category);
+
+      return matchDir &&
+          matchCat &&
+          matchQuery &&
+          matchDate &&
+          matchCategoryList;
     }).toList();
   }
 }
