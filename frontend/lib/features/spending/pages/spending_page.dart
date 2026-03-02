@@ -26,38 +26,44 @@ class _SpendingPageState extends State<SpendingPage> {
   String? _errorMessage;
   int _touchedIndex = -1;
 
-  static final DateTime _epoch = DateTime(2020, 1);
+  static const int _epochYear = 2020;
+  static const int _epochMonth = 1;
 
-  late final PageController _monthPageController;
-  late final PageController _yearPageController;
+  static const int _epochAbsMonth = _epochYear * 12 + _epochMonth - 1;
 
-  int _monthToPage(DateTime date) =>
-      (date.year - _epoch.year) * 12 + (date.month - _epoch.month);
+  late PageController _pageController;
+
+  int _monthToPage(DateTime d) => (d.year * 12 + d.month - 1) - _epochAbsMonth;
 
   DateTime _pageToMonth(int page) {
-    final totalMonths = _epoch.month + page - 1;
-    return DateTime(_epoch.year + totalMonths ~/ 12, totalMonths % 12 + 1);
+    final abs = _epochAbsMonth + page;
+    return DateTime(abs ~/ 12, abs % 12 + 1);
   }
 
-  int _yearToPage(int year) => year - _epoch.year;
-  int _pageToYear(int page) => _epoch.year + page;
+  int _yearToPage(int year) => year - _epochYear;
+  int _pageToYear(int page) => _epochYear + page;
+
+  int get _currentPage => _filters.scope == FilterScope.month
+      ? _monthToPage(_filters.referenceDate)
+      : _yearToPage(_filters.referenceDate.year);
+
+  int get _maxPage {
+    final now = DateTime.now();
+    return _filters.scope == FilterScope.month
+        ? _monthToPage(DateTime(now.year, now.month))
+        : _yearToPage(now.year);
+  }
 
   @override
   void initState() {
     super.initState();
-    _monthPageController = PageController(
-      initialPage: _monthToPage(_filters.referenceDate),
-    );
-    _yearPageController = PageController(
-      initialPage: _yearToPage(_filters.referenceDate.year),
-    );
+    _pageController = PageController(initialPage: _currentPage);
     _loadBudgets();
   }
 
   @override
   void dispose() {
-    _monthPageController.dispose();
-    _yearPageController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -104,6 +110,55 @@ class _SpendingPageState extends State<SpendingPage> {
     });
   }
 
+  void _onScopeChanged(FilterScope newScope) {
+    if (newScope == _filters.scope) return;
+
+    final now = DateTime(DateTime.now().year, DateTime.now().month);
+    final newFilters = _filters.copyWith(scope: newScope, referenceDate: now);
+
+    final newPage = newScope == FilterScope.month
+        ? _monthToPage(now)
+        : _yearToPage(now.year);
+
+    _pageController.dispose();
+    _pageController = PageController(initialPage: newPage);
+
+    setState(() {
+      _filters = newFilters;
+      _touchedIndex = -1;
+    });
+  }
+
+  void _onDateChanged(DateTime date) {
+    final newPage = _filters.scope == FilterScope.month
+        ? _monthToPage(date)
+        : _yearToPage(date.year);
+
+    setState(() {
+      _filters = _filters.copyWith(referenceDate: date);
+      _touchedIndex = -1;
+    });
+
+    if (_pageController.hasClients) {
+      _pageController.animateToPage(
+        newPage,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _onPageChanged(int page) {
+    final date = _filters.scope == FilterScope.month
+        ? _pageToMonth(page)
+        : DateTime(_pageToYear(page), _filters.referenceDate.month);
+
+    setState(() {
+      _filters = _filters.copyWith(referenceDate: date);
+      _touchedIndex = -1;
+    });
+  }
+
   List<TransactionCategorySummary> _buildSummaries(FilterState filters) {
     final transactions = filters
         .applyFilter(widget.transactions)
@@ -128,56 +183,6 @@ class _SpendingPageState extends State<SpendingPage> {
         .where((s) => s.categorySum != 0)
         .toList()
       ..sort((a, b) => a.categorySum.compareTo(b.categorySum));
-  }
-
-  void _onScopeChanged(FilterScope scope) {
-    final now = DateTime(DateTime.now().year, DateTime.now().month);
-    setState(() {
-      _filters = _filters.copyWith(scope: scope, referenceDate: now);
-      _touchedIndex = -1;
-    });
-    if (_monthPageController.hasClients) {
-      _monthPageController.jumpToPage(_monthToPage(now));
-    }
-    if (_yearPageController.hasClients) {
-      _yearPageController.jumpToPage(_yearToPage(now.year));
-    }
-  }
-
-  void _onDateChanged(DateTime date) {
-    setState(() {
-      _filters = _filters.copyWith(referenceDate: date);
-      _touchedIndex = -1;
-    });
-    _syncPageControllers(date, animate: true);
-  }
-
-  void _syncPageControllers(DateTime date, {bool animate = false}) {
-    final monthPage = _monthToPage(date);
-    final yearPage = _yearToPage(date.year);
-
-    void jump(PageController c, int page) {
-      if (c.hasClients) c.jumpToPage(page);
-    }
-
-    void go(PageController c, int page) {
-      if (!c.hasClients) return;
-      animate
-          ? c.animateToPage(
-              page,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            )
-          : c.jumpToPage(page);
-    }
-
-    if (_filters.scope == FilterScope.month) {
-      go(_monthPageController, monthPage);
-      jump(_yearPageController, yearPage);
-    } else {
-      go(_yearPageController, yearPage);
-      jump(_monthPageController, monthPage);
-    }
   }
 
   @override
@@ -211,70 +216,39 @@ class _SpendingPageState extends State<SpendingPage> {
             ),
           ),
           const SizedBox(height: 8),
-          Expanded(child: _buildPageViews()),
+          Expanded(child: _buildPageView()),
         ],
       ),
     );
   }
 
-  Widget _buildPageViews() {
-    if (_filters.scope == FilterScope.month) {
-      return PageView.builder(
-        controller: _monthPageController,
-        itemCount: _monthToPage(DateTime.now()) + 1,
-        onPageChanged: (page) {
-          final date = _pageToMonth(page);
-          setState(() {
-            _filters = _filters.copyWith(referenceDate: date);
-            _touchedIndex = -1;
-          });
-          if (_yearPageController.hasClients) {
-            _yearPageController.jumpToPage(_yearToPage(date.year));
-          }
-        },
-        itemBuilder: (context, page) {
-          final date = _pageToMonth(page);
-          final summaries = _buildSummaries(
-            _filters.copyWith(referenceDate: date),
-          );
-          return SpendingContent(
-            summaries: summaries,
-            budget: _budgetFor(date),
-            scope: _filters.scope,
-            touchedIndex: _touchedIndex,
-            onTouchedIndexChanged: (i) => setState(() => _touchedIndex = i),
-            onBudgetUpdated: (limit) => _updateBudgetLimit(date, limit),
-            onCategoryFilterChanged: (filter) =>
-                _updateCategoryFilter(date, filter),
-          );
-        },
-      );
-    }
-
+  Widget _buildPageView() {
     return PageView.builder(
-      controller: _yearPageController,
-      itemCount: _yearToPage(DateTime.now().year) + 1,
-      onPageChanged: (page) {
-        final date = DateTime(_pageToYear(page), _filters.referenceDate.month);
-        setState(() {
-          _filters = _filters.copyWith(referenceDate: date);
-          _touchedIndex = -1;
-        });
-        if (_monthPageController.hasClients) {
-          _monthPageController.jumpToPage(_monthToPage(date));
-        }
-      },
+      key: ValueKey(_filters.scope),
+      controller: _pageController,
+      itemCount: _maxPage + 1,
+      onPageChanged: _onPageChanged,
       itemBuilder: (context, page) {
-        final date = DateTime(_pageToYear(page), _filters.referenceDate.month);
-        final summaries = _buildSummaries(
-          _filters.copyWith(referenceDate: date),
-        );
+        final date = _filters.scope == FilterScope.month
+            ? _pageToMonth(page)
+            : DateTime(_pageToYear(page), _filters.referenceDate.month);
+
+        final pageFilters = _filters.copyWith(referenceDate: date);
+        final summaries = _buildSummaries(pageFilters);
+        final isMonthScope = _filters.scope == FilterScope.month;
+
         return SpendingContent(
           summaries: summaries,
-          budget: null,
+          budget: isMonthScope ? _budgetFor(date) : null,
           scope: _filters.scope,
           touchedIndex: _touchedIndex,
           onTouchedIndexChanged: (i) => setState(() => _touchedIndex = i),
+          onBudgetUpdated: isMonthScope
+              ? (limit) => _updateBudgetLimit(date, limit)
+              : null,
+          onCategoryFilterChanged: isMonthScope
+              ? (filter) => _updateCategoryFilter(date, filter)
+              : null,
         );
       },
     );
