@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/models/budget.dart';
+import 'package:frontend/core/models/filter_state.dart';
 import 'package:frontend/core/models/transaction.dart';
 import 'package:frontend/core/models/transaction_categories.dart';
 import 'package:frontend/core/models/transaction_category_summary.dart';
-import 'package:frontend/core/models/filter_state.dart';
 import 'package:frontend/core/services/budget_service.dart';
-import 'package:frontend/features/spending/widgets/categorized_transaction_list.dart';
-import 'package:frontend/features/spending/widgets/spending_bar_chart.dart';
-import 'package:frontend/features/spending/widgets/budget_card.dart';
+import 'package:frontend/features/spending/widgets/spending_content.dart';
 import 'package:frontend/features/spending/widgets/spending_period_filter.dart';
-import 'package:frontend/features/spending/widgets/spending_pie_chart.dart';
 import 'package:frontend/features/spending/widgets/spending_scope_filter.dart';
 import 'package:frontend/utils/date_extention.dart';
 
 class SpendingPage extends StatefulWidget {
   final List<Transaction> transactions;
+
   const SpendingPage({super.key, required this.transactions});
 
   @override
@@ -23,22 +21,22 @@ class SpendingPage extends StatefulWidget {
 
 class _SpendingPageState extends State<SpendingPage> {
   FilterState _filters = FilterState(scope: FilterScope.month);
-  List<Budget> _allBudgets = [];
+  List<Budget> _budgets = [];
   bool _isLoading = true;
   String? _errorMessage;
-  int touchedIndex = -1;
+  int _touchedIndex = -1;
 
-  late final PageController _pageController;
+  static final DateTime _epoch = DateTime(2020, 1);
+
+  late final PageController _monthPageController;
   late final PageController _yearPageController;
 
-  static final _epoch = DateTime(2020, 1);
-
-  int _dateToPage(DateTime date) =>
+  int _monthToPage(DateTime date) =>
       (date.year - _epoch.year) * 12 + (date.month - _epoch.month);
 
-  DateTime _pageToDate(int page) {
-    final months = _epoch.month + page - 1;
-    return DateTime(_epoch.year + months ~/ 12, months % 12 + 1);
+  DateTime _pageToMonth(int page) {
+    final totalMonths = _epoch.month + page - 1;
+    return DateTime(_epoch.year + totalMonths ~/ 12, totalMonths % 12 + 1);
   }
 
   int _yearToPage(int year) => year - _epoch.year;
@@ -47,66 +45,28 @@ class _SpendingPageState extends State<SpendingPage> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(
-      initialPage: _dateToPage(_filters.referenceDate),
+    _monthPageController = PageController(
+      initialPage: _monthToPage(_filters.referenceDate),
     );
     _yearPageController = PageController(
       initialPage: _yearToPage(_filters.referenceDate.year),
     );
-    _fetchData();
+    _loadBudgets();
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
+    _monthPageController.dispose();
     _yearPageController.dispose();
     super.dispose();
   }
 
-  void _syncControllers(DateTime date, {bool animate = true}) {
-    final monthPage = _dateToPage(date);
-    final yearPage = _yearToPage(date.year);
-
-    if (_filters.scope == FilterScope.month) {
-      if (animate) {
-        if (_pageController.hasClients) {
-          _pageController.animateToPage(
-            monthPage,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        }
-      } else {
-        if (_pageController.hasClients) _pageController.jumpToPage(monthPage);
-      }
-      if (_yearPageController.hasClients) {
-        _yearPageController.jumpToPage(yearPage);
-      }
-    } else {
-      if (animate) {
-        if (_yearPageController.hasClients) {
-          _yearPageController.animateToPage(
-            yearPage,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        }
-      } else {
-        if (_yearPageController.hasClients) {
-          _yearPageController.jumpToPage(yearPage);
-        }
-      }
-      if (_pageController.hasClients) _pageController.jumpToPage(monthPage);
-    }
-  }
-
-  Future<void> _fetchData() async {
+  Future<void> _loadBudgets() async {
     try {
-      final data = await BudgetService.loadMonthlyBudgets();
+      final budgets = await BudgetService.loadMonthlyBudgets();
       setState(() {
-        _allBudgets = data;
+        _budgets = budgets;
         _isLoading = false;
-        _errorMessage = null;
       });
     } catch (e) {
       setState(() {
@@ -116,9 +76,9 @@ class _SpendingPageState extends State<SpendingPage> {
     }
   }
 
-  Budget? _budgetForDate(DateTime date) {
+  Budget? _budgetFor(DateTime date) {
     try {
-      return _allBudgets.firstWhere((b) => b.month.isSameMonth(date));
+      return _budgets.firstWhere((b) => b.month.isSameMonth(date));
     } catch (_) {
       return null;
     }
@@ -126,43 +86,34 @@ class _SpendingPageState extends State<SpendingPage> {
 
   void _updateBudgetLimit(DateTime date, double newLimit) {
     setState(() {
-      final index = _allBudgets.indexWhere((b) => b.month.isSameMonth(date));
-      if (index != -1) {
-        _allBudgets[index] = _allBudgets[index].copyWith(totalLimit: newLimit);
+      final i = _budgets.indexWhere((b) => b.month.isSameMonth(date));
+      if (i != -1) {
+        _budgets[i] = _budgets[i].copyWith(totalLimit: newLimit);
       } else {
-        _allBudgets.add(Budget(month: date, totalLimit: newLimit));
+        _budgets.add(Budget(month: date, totalLimit: newLimit));
       }
     });
   }
 
-  void _updateCategoryFilter(
-    DateTime date,
-    Set<TransactionCategory> newFilter,
-  ) {
+  void _updateCategoryFilter(DateTime date, Set<TransactionCategory> filter) {
     setState(() {
-      final index = _allBudgets.indexWhere((b) => b.month.isSameMonth(date));
-      if (index != -1) {
-        _allBudgets[index] = _allBudgets[index].copyWith(filtering: newFilter);
+      final i = _budgets.indexWhere((b) => b.month.isSameMonth(date));
+      if (i != -1) {
+        _budgets[i] = _budgets[i].copyWith(filtering: filter);
       }
     });
   }
 
-  List<TransactionCategorySummary> _createSummaries(
-    FilterState filters,
-    List<Transaction> transactions,
-  ) {
-    final filtered = filters
-        .applyFilter(transactions)
+  List<TransactionCategorySummary> _buildSummaries(FilterState filters) {
+    final transactions = filters
+        .applyFilter(widget.transactions)
         .where((t) => t.category != TransactionCategory.transfer)
         .toList();
 
-    final double total = filtered.fold(
-      0,
-      (prev, t) => prev + (t.amountOut ?? 0),
-    );
+    final total = transactions.fold(0.0, (sum, t) => sum + (t.amountOut ?? 0));
 
-    final Map<TransactionCategory, double> grouped = {};
-    for (final t in filtered) {
+    final grouped = <TransactionCategory, double>{};
+    for (final t in transactions) {
       grouped[t.category] = (grouped[t.category] ?? 0) + (t.amountOut ?? 0);
     }
 
@@ -174,20 +125,159 @@ class _SpendingPageState extends State<SpendingPage> {
             categorySum: e.value,
           ),
         )
-        .where((e) => e.categorySum != 0)
+        .where((s) => s.categorySum != 0)
         .toList()
       ..sort((a, b) => a.categorySum.compareTo(b.categorySum));
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) return _buildLoadingView();
-    if (_errorMessage != null) return _buildErrorView();
-    return _buildMainBody();
+  void _onScopeChanged(FilterScope scope) {
+    final now = DateTime(DateTime.now().year, DateTime.now().month);
+    setState(() {
+      _filters = _filters.copyWith(scope: scope, referenceDate: now);
+      _touchedIndex = -1;
+    });
+    if (_monthPageController.hasClients) {
+      _monthPageController.jumpToPage(_monthToPage(now));
+    }
+    if (_yearPageController.hasClients) {
+      _yearPageController.jumpToPage(_yearToPage(now.year));
+    }
   }
 
-  Widget _buildLoadingView() {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+  void _onDateChanged(DateTime date) {
+    setState(() {
+      _filters = _filters.copyWith(referenceDate: date);
+      _touchedIndex = -1;
+    });
+    _syncPageControllers(date, animate: true);
+  }
+
+  void _syncPageControllers(DateTime date, {bool animate = false}) {
+    final monthPage = _monthToPage(date);
+    final yearPage = _yearToPage(date.year);
+
+    void jump(PageController c, int page) {
+      if (c.hasClients) c.jumpToPage(page);
+    }
+
+    void go(PageController c, int page) {
+      if (!c.hasClients) return;
+      animate
+          ? c.animateToPage(
+              page,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            )
+          : c.jumpToPage(page);
+    }
+
+    if (_filters.scope == FilterScope.month) {
+      go(_monthPageController, monthPage);
+      jump(_yearPageController, yearPage);
+    } else {
+      go(_yearPageController, yearPage);
+      jump(_monthPageController, monthPage);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (_errorMessage != null) {
+      return _buildErrorView();
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Spending Insights')),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Column(
+              spacing: 8,
+              children: [
+                SpendingScopeFilter(
+                  selectedScope: _filters.scope,
+                  onScopeChanged: _onScopeChanged,
+                ),
+                SpendingPeriodFilter(
+                  scope: _filters.scope,
+                  referenceDate: _filters.referenceDate,
+                  onReferenceDateChanged: _onDateChanged,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(child: _buildPageViews()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPageViews() {
+    if (_filters.scope == FilterScope.month) {
+      return PageView.builder(
+        controller: _monthPageController,
+        itemCount: _monthToPage(DateTime.now()) + 1,
+        onPageChanged: (page) {
+          final date = _pageToMonth(page);
+          setState(() {
+            _filters = _filters.copyWith(referenceDate: date);
+            _touchedIndex = -1;
+          });
+          if (_yearPageController.hasClients) {
+            _yearPageController.jumpToPage(_yearToPage(date.year));
+          }
+        },
+        itemBuilder: (context, page) {
+          final date = _pageToMonth(page);
+          final summaries = _buildSummaries(
+            _filters.copyWith(referenceDate: date),
+          );
+          return SpendingContent(
+            summaries: summaries,
+            budget: _budgetFor(date),
+            scope: _filters.scope,
+            touchedIndex: _touchedIndex,
+            onTouchedIndexChanged: (i) => setState(() => _touchedIndex = i),
+            onBudgetUpdated: (limit) => _updateBudgetLimit(date, limit),
+            onCategoryFilterChanged: (filter) =>
+                _updateCategoryFilter(date, filter),
+          );
+        },
+      );
+    }
+
+    return PageView.builder(
+      controller: _yearPageController,
+      itemCount: _yearToPage(DateTime.now().year) + 1,
+      onPageChanged: (page) {
+        final date = DateTime(_pageToYear(page), _filters.referenceDate.month);
+        setState(() {
+          _filters = _filters.copyWith(referenceDate: date);
+          _touchedIndex = -1;
+        });
+        if (_monthPageController.hasClients) {
+          _monthPageController.jumpToPage(_monthToPage(date));
+        }
+      },
+      itemBuilder: (context, page) {
+        final date = DateTime(_pageToYear(page), _filters.referenceDate.month);
+        final summaries = _buildSummaries(
+          _filters.copyWith(referenceDate: date),
+        );
+        return SpendingContent(
+          summaries: summaries,
+          budget: null,
+          scope: _filters.scope,
+          touchedIndex: _touchedIndex,
+          onTouchedIndexChanged: (i) => setState(() => _touchedIndex = i),
+        );
+      },
+    );
   }
 
   Widget _buildErrorView() {
@@ -203,173 +293,12 @@ class _SpendingPageState extends State<SpendingPage> {
             ElevatedButton(
               onPressed: () {
                 setState(() => _isLoading = true);
-                _fetchData();
+                _loadBudgets();
               },
               child: const Text('Retry'),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildMainBody() {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Spending Insights")),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Column(
-              spacing: 8,
-              children: [
-                ScopeFilter(
-                  selectedScope: _filters.scope,
-                  onScopeChanged: (scope) {
-                    final newDate = DateTime(
-                      DateTime.now().year,
-                      DateTime.now().month,
-                    );
-                    setState(() {
-                      _filters = _filters.copyWith(
-                        scope: scope,
-                        referenceDate: newDate,
-                      );
-                      touchedIndex = -1;
-                    });
-                    if (_pageController.hasClients) {
-                      _pageController.jumpToPage(_dateToPage(newDate));
-                    }
-                    if (_yearPageController.hasClients) {
-                      _yearPageController.jumpToPage(_yearToPage(newDate.year));
-                    }
-                  },
-                ),
-                PeriodFilter(
-                  scope: _filters.scope,
-                  referenceDate: _filters.referenceDate,
-                  onReferenceDateChanged: (date) {
-                    setState(() {
-                      _filters = _filters.copyWith(referenceDate: date);
-                      touchedIndex = -1;
-                    });
-                    _syncControllers(date);
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          Expanded(
-            child: _filters.scope == FilterScope.month
-                ? PageView.builder(
-                    controller: _pageController,
-                    itemCount: _dateToPage(DateTime.now()) + 1,
-                    onPageChanged: (page) {
-                      final newDate = _pageToDate(page);
-                      setState(() {
-                        _filters = _filters.copyWith(referenceDate: newDate);
-                        touchedIndex = -1;
-                      });
-                      if (_yearPageController.hasClients) {
-                        _yearPageController.jumpToPage(
-                          _yearToPage(newDate.year),
-                        );
-                      }
-                    },
-                    itemBuilder: (context, page) {
-                      final pageDate = _pageToDate(page);
-                      final summaries = _createSummaries(
-                        _filters.copyWith(referenceDate: pageDate),
-                        widget.transactions,
-                      );
-                      return _buildPageContent(
-                        summaries: summaries,
-                        budget: _budgetForDate(pageDate),
-                        pageDate: pageDate,
-                      );
-                    },
-                  )
-                : PageView.builder(
-                    controller: _yearPageController,
-                    itemCount: _yearToPage(DateTime.now().year) + 1,
-                    onPageChanged: (page) {
-                      final newDate = DateTime(
-                        _pageToYear(page),
-                        _filters.referenceDate.month,
-                      );
-                      setState(() {
-                        _filters = _filters.copyWith(referenceDate: newDate);
-                        touchedIndex = -1;
-                      });
-                      if (_pageController.hasClients) {
-                        _pageController.jumpToPage(_dateToPage(newDate));
-                      }
-                    },
-                    itemBuilder: (context, page) {
-                      final yearDate = DateTime(
-                        _pageToYear(page),
-                        _filters.referenceDate.month,
-                      );
-                      final summaries = _createSummaries(
-                        _filters.copyWith(referenceDate: yearDate),
-                        widget.transactions,
-                      );
-                      return _buildPageContent(
-                        summaries: summaries,
-                        budget: null,
-                        pageDate: yearDate,
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPageContent({
-    required List<TransactionCategorySummary> summaries,
-    required Budget? budget,
-    required DateTime pageDate,
-  }) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                spacing: 16,
-                children: [
-                  if (_filters.scope == FilterScope.month)
-                    BudgetCard(
-                      budget: budget,
-                      summaries: summaries,
-                      onBudgetUpdated: (newLimit) =>
-                          _updateBudgetLimit(pageDate, newLimit),
-                      onCategoryFilterChanged: (newFilter) =>
-                          _updateCategoryFilter(pageDate, newFilter),
-                    ),
-                  SpendingPieChart(
-                    categorySummaries: summaries,
-                    touchedIndex: touchedIndex,
-                    onTouchedIndexChanged: (index) =>
-                        setState(() => touchedIndex = index),
-                  ),
-                  SpendingBarChart(
-                    categorySummaries: summaries,
-                    touchedIndex: touchedIndex,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Card(child: CategorizedTransactionList()),
-        ],
       ),
     );
   }

@@ -3,17 +3,34 @@ import 'package:frontend/core/models/filter_state.dart';
 import 'package:frontend/core/theme/app_colors.dart';
 import 'package:frontend/utils/date_extention.dart';
 
-class PeriodFilter extends StatelessWidget {
+class SpendingPeriodFilter extends StatelessWidget {
   final FilterScope scope;
   final DateTime referenceDate;
   final ValueChanged<DateTime> onReferenceDateChanged;
 
-  const PeriodFilter({
+  const SpendingPeriodFilter({
     super.key,
     required this.scope,
     required this.referenceDate,
     required this.onReferenceDateChanged,
   });
+
+  bool get _isAtPresent {
+    if (scope == FilterScope.month) return referenceDate.isCurrentMonth;
+    return referenceDate.isCurrentYear;
+  }
+
+  String get _label {
+    if (scope == FilterScope.year) return '${referenceDate.year}';
+    return referenceDate.toMonthTitle();
+  }
+
+  void _step(int direction) {
+    final date = scope == FilterScope.month
+        ? DateTime(referenceDate.year, referenceDate.month + direction)
+        : DateTime(referenceDate.year + direction, referenceDate.month);
+    onReferenceDateChanged(date);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,76 +39,79 @@ class PeriodFilter extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildCalenderButton(
+          _NavButton(
             icon: Icons.chevron_left,
-            onTap: () {
-              _handleStep(-1);
-            },
             enabled: true,
+            onTap: () => _step(-1),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            spacing: 5.0,
-            children: [
-              GestureDetector(
-                child: Icon(
-                  Icons.calendar_month,
-                  size: 14,
-                  color: AppColors.navy,
-                ),
-                onTap: () {
-                  // select a month with a calender popup
-                },
-              ),
-              Text(
-                _getLabel(),
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: AppColors.navy,
-                ),
-              ),
-              ?(scope == FilterScope.month && referenceDate.isCurrentMonth ||
-                      scope == FilterScope.year && referenceDate.isCurrentYear)
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.navy,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-
-                      child: const Text(
-                        "CURRENT",
-                        style: TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.background,
-                        ),
-                      ),
-                    )
-                  : null,
-            ],
-          ),
-          _buildCalenderButton(
+          _buildLabel(),
+          _NavButton(
             icon: Icons.chevron_right,
-            onTap: () {
-              _handleStep(1);
-            },
-            enabled: !_isFuture(),
+            enabled: !_isAtPresent,
+            onTap: () => _step(1),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCalenderButton({
-    required IconData icon,
-    required VoidCallback onTap,
-    required bool enabled,
-  }) {
+  Widget _buildLabel() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      spacing: 5.0,
+      children: [
+        GestureDetector(
+          onTap: () {
+            // TODO: open calendar picker
+          },
+          child: const Icon(
+            Icons.calendar_month,
+            size: 14,
+            color: AppColors.navy,
+          ),
+        ),
+        Text(
+          _label,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: AppColors.navy,
+          ),
+        ),
+        if (_isAtPresent)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.navy,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text(
+              'CURRENT',
+              style: TextStyle(
+                fontSize: 8,
+                fontWeight: FontWeight.w600,
+                color: AppColors.background,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _NavButton extends StatelessWidget {
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _NavButton({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return SizedBox(
       width: 32,
       height: 32,
@@ -112,30 +132,5 @@ class PeriodFilter extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  void _handleStep(int step) {
-    if (scope == FilterScope.month) {
-      onReferenceDateChanged(
-        DateTime(referenceDate.year, referenceDate.month + step),
-      );
-    } else {
-      onReferenceDateChanged(
-        DateTime(referenceDate.year + step, referenceDate.month),
-      );
-    }
-  }
-
-  String _getLabel() {
-    if (scope == FilterScope.year) return "${referenceDate.year}";
-    return referenceDate.toMonthTitle();
-  }
-
-  bool _isFuture() {
-    final now = DateTime.now();
-    if (scope == FilterScope.month) {
-      return referenceDate.year >= now.year && referenceDate.month >= now.month;
-    }
-    return referenceDate.year >= now.year;
   }
 }

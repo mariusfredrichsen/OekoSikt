@@ -2,11 +2,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:frontend/core/models/filter_state.dart';
 import 'package:frontend/core/theme/app_colors.dart';
 
-class ScopeFilter extends StatelessWidget {
+class SpendingScopeFilter extends StatelessWidget {
   final FilterScope selectedScope;
   final ValueChanged<FilterScope> onScopeChanged;
 
-  const ScopeFilter({
+  const SpendingScopeFilter({
     super.key,
     required this.selectedScope,
     required this.onScopeChanged,
@@ -23,14 +23,14 @@ class ScopeFilter extends StatelessWidget {
         thumbColor: AppColors.navy,
         onValueChanged: (scope) => scope != null ? onScopeChanged(scope) : null,
         children: {
-          FilterScope.month: _buildSegmentText("Month", FilterScope.month),
-          FilterScope.year: _buildSegmentText("Year", FilterScope.year),
+          FilterScope.month: _buildLabel("Month", FilterScope.month),
+          FilterScope.year: _buildLabel("Year", FilterScope.year),
         },
       ),
     );
   }
 
-  Widget _buildSegmentText(String text, FilterScope scope) {
+  Widget _buildLabel(String text, FilterScope scope) {
     final isSelected = selectedScope == scope;
     return Text(
       text,
