@@ -282,7 +282,7 @@ class _BudgetPageState extends State<BudgetPage> {
 
   Widget _buildCategoryCard() {
     final int selectedCount = _newCategoryFilter.length;
-    final int totalCount = TransactionCategory.expenseCategories.length;
+    final int totalCount = TransactionCategory.values.length;
 
     return Card(
       child: Padding(

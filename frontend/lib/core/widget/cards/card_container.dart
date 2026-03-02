@@ -33,15 +33,15 @@ class CardContainer extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: 12,
           children: [
-            if (title != null) title!,
-            if (body != null) body!,
+            ?title,
+            ?body,
 
             if (footer != null || (actions != null && actions!.isNotEmpty))
               Column(
                 spacing: 8,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (footer != null) footer!,
+                  ?footer,
                   if (actions != null && actions!.isNotEmpty)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
