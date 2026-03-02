@@ -26,7 +26,8 @@ enum TransactionCategory {
   entertainment('Fun', 'Entertainment', Icons.movie, Color(0xFF8B5CF6)),
   income('Income', 'Salary & Income', Icons.payments, Color(0xFF22C55E)),
   transfer('Transfer', 'Transfers', Icons.swap_horiz, Color(0xFF94A3B8)),
-  other('Other', 'Miscellaneous', Icons.more_horiz, Color(0xFF475569));
+  other('Other', 'Miscellaneous', Icons.more_horiz, Color(0xFF475569)),
+  uncategorized("Misc", 'Uncategorized', Icons.question_mark, Colors.blueGrey);
 
   final String label;
   final String description;
@@ -58,6 +59,7 @@ enum TransactionCategory {
           (cat) => !{
             TransactionCategory.all,
             TransactionCategory.income,
+            TransactionCategory.transfer,
           }.contains(cat),
         )
         .toList();

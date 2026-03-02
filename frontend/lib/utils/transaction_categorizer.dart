@@ -288,7 +288,7 @@ class TransactionCategorizer {
       }
     });
 
-    if (scores.isEmpty) return TransactionCategory.other;
+    if (scores.isEmpty) return TransactionCategory.uncategorized;
 
     return scores.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
   }
