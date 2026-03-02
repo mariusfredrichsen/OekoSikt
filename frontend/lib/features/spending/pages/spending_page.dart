@@ -5,6 +5,7 @@ import 'package:frontend/core/models/transaction_categories.dart';
 import 'package:frontend/core/models/transaction_category_summary.dart';
 import 'package:frontend/core/models/filter_state.dart';
 import 'package:frontend/core/services/budget_service.dart';
+import 'package:frontend/features/spending/widgets/categorized_transaction_list.dart';
 import 'package:frontend/features/spending/widgets/spending_bar_chart.dart';
 import 'package:frontend/features/spending/widgets/budget_card.dart';
 import 'package:frontend/features/spending/widgets/spending_period_filter.dart';
@@ -28,6 +29,7 @@ class _SpendingPageState extends State<SpendingPage> {
   int touchedIndex = -1;
 
   late final PageController _pageController;
+  late final PageController _yearPageController;
 
   static final _epoch = DateTime(2020, 1);
 
@@ -39,11 +41,17 @@ class _SpendingPageState extends State<SpendingPage> {
     return DateTime(_epoch.year + months ~/ 12, months % 12 + 1);
   }
 
+  int _yearToPage(int year) => year - _epoch.year;
+  int _pageToYear(int page) => _epoch.year + page;
+
   @override
   void initState() {
     super.initState();
     _pageController = PageController(
       initialPage: _dateToPage(_filters.referenceDate),
+    );
+    _yearPageController = PageController(
+      initialPage: _yearToPage(_filters.referenceDate.year),
     );
     _fetchData();
   }
@@ -51,7 +59,45 @@ class _SpendingPageState extends State<SpendingPage> {
   @override
   void dispose() {
     _pageController.dispose();
+    _yearPageController.dispose();
     super.dispose();
+  }
+
+  void _syncControllers(DateTime date, {bool animate = true}) {
+    final monthPage = _dateToPage(date);
+    final yearPage = _yearToPage(date.year);
+
+    if (_filters.scope == FilterScope.month) {
+      if (animate) {
+        if (_pageController.hasClients) {
+          _pageController.animateToPage(
+            monthPage,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      } else {
+        if (_pageController.hasClients) _pageController.jumpToPage(monthPage);
+      }
+      if (_yearPageController.hasClients) {
+        _yearPageController.jumpToPage(yearPage);
+      }
+    } else {
+      if (animate) {
+        if (_yearPageController.hasClients) {
+          _yearPageController.animateToPage(
+            yearPage,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      } else {
+        if (_yearPageController.hasClients) {
+          _yearPageController.jumpToPage(yearPage);
+        }
+      }
+      if (_pageController.hasClients) _pageController.jumpToPage(monthPage);
+    }
   }
 
   Future<void> _fetchData() async {
@@ -99,14 +145,6 @@ class _SpendingPageState extends State<SpendingPage> {
         _allBudgets[index] = _allBudgets[index].copyWith(filtering: newFilter);
       }
     });
-  }
-
-  void _goToPage(DateTime date) {
-    _pageController.animateToPage(
-      _dateToPage(date),
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
   }
 
   List<TransactionCategorySummary> _createSummaries(
@@ -187,12 +225,25 @@ class _SpendingPageState extends State<SpendingPage> {
               children: [
                 ScopeFilter(
                   selectedScope: _filters.scope,
-                  onScopeChanged: (scope) => setState(
-                    () => _filters = _filters.copyWith(
-                      scope: scope,
-                      referenceDate: DateTime.now(),
-                    ),
-                  ),
+                  onScopeChanged: (scope) {
+                    final newDate = DateTime(
+                      DateTime.now().year,
+                      DateTime.now().month,
+                    );
+                    setState(() {
+                      _filters = _filters.copyWith(
+                        scope: scope,
+                        referenceDate: newDate,
+                      );
+                      touchedIndex = -1;
+                    });
+                    if (_pageController.hasClients) {
+                      _pageController.jumpToPage(_dateToPage(newDate));
+                    }
+                    if (_yearPageController.hasClients) {
+                      _yearPageController.jumpToPage(_yearToPage(newDate.year));
+                    }
+                  },
                 ),
                 PeriodFilter(
                   scope: _filters.scope,
@@ -202,7 +253,7 @@ class _SpendingPageState extends State<SpendingPage> {
                       _filters = _filters.copyWith(referenceDate: date);
                       touchedIndex = -1;
                     });
-                    if (_filters.scope == FilterScope.month) _goToPage(date);
+                    _syncControllers(date);
                   },
                 ),
               ],
@@ -217,35 +268,61 @@ class _SpendingPageState extends State<SpendingPage> {
                     controller: _pageController,
                     itemCount: _dateToPage(DateTime.now()) + 1,
                     onPageChanged: (page) {
+                      final newDate = _pageToDate(page);
                       setState(() {
-                        _filters = _filters.copyWith(
-                          referenceDate: _pageToDate(page),
-                        );
+                        _filters = _filters.copyWith(referenceDate: newDate);
                         touchedIndex = -1;
                       });
+                      if (_yearPageController.hasClients) {
+                        _yearPageController.jumpToPage(
+                          _yearToPage(newDate.year),
+                        );
+                      }
                     },
                     itemBuilder: (context, page) {
                       final pageDate = _pageToDate(page);
-                      final pageFilters = _filters.copyWith(
-                        referenceDate: pageDate,
-                      );
                       final summaries = _createSummaries(
-                        pageFilters,
+                        _filters.copyWith(referenceDate: pageDate),
                         widget.transactions,
                       );
-                      final budget = _budgetForDate(pageDate);
-
                       return _buildPageContent(
                         summaries: summaries,
-                        budget: budget,
+                        budget: _budgetForDate(pageDate),
                         pageDate: pageDate,
                       );
                     },
                   )
-                : _buildPageContent(
-                    summaries: _createSummaries(_filters, widget.transactions),
-                    budget: null,
-                    pageDate: _filters.referenceDate,
+                : PageView.builder(
+                    controller: _yearPageController,
+                    itemCount: _yearToPage(DateTime.now().year) + 1,
+                    onPageChanged: (page) {
+                      final newDate = DateTime(
+                        _pageToYear(page),
+                        _filters.referenceDate.month,
+                      );
+                      setState(() {
+                        _filters = _filters.copyWith(referenceDate: newDate);
+                        touchedIndex = -1;
+                      });
+                      if (_pageController.hasClients) {
+                        _pageController.jumpToPage(_dateToPage(newDate));
+                      }
+                    },
+                    itemBuilder: (context, page) {
+                      final yearDate = DateTime(
+                        _pageToYear(page),
+                        _filters.referenceDate.month,
+                      );
+                      final summaries = _createSummaries(
+                        _filters.copyWith(referenceDate: yearDate),
+                        widget.transactions,
+                      );
+                      return _buildPageContent(
+                        summaries: summaries,
+                        budget: null,
+                        pageDate: yearDate,
+                      );
+                    },
                   ),
           ),
         ],
@@ -260,34 +337,39 @@ class _SpendingPageState extends State<SpendingPage> {
   }) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            spacing: 16,
-            children: [
-              if (_filters.scope == FilterScope.month)
-                BudgetCard(
-                  budget: budget,
-                  summaries: summaries,
-                  onBudgetUpdated: (newLimit) =>
-                      _updateBudgetLimit(pageDate, newLimit),
-                  onCategoryFilterChanged: (newFilter) =>
-                      _updateCategoryFilter(pageDate, newFilter),
-                ),
-              SpendingPieChart(
-                categorySummaries: summaries,
-                touchedIndex: touchedIndex,
-                onTouchedIndexChanged: (index) =>
-                    setState(() => touchedIndex = index),
+      child: Column(
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                spacing: 16,
+                children: [
+                  if (_filters.scope == FilterScope.month)
+                    BudgetCard(
+                      budget: budget,
+                      summaries: summaries,
+                      onBudgetUpdated: (newLimit) =>
+                          _updateBudgetLimit(pageDate, newLimit),
+                      onCategoryFilterChanged: (newFilter) =>
+                          _updateCategoryFilter(pageDate, newFilter),
+                    ),
+                  SpendingPieChart(
+                    categorySummaries: summaries,
+                    touchedIndex: touchedIndex,
+                    onTouchedIndexChanged: (index) =>
+                        setState(() => touchedIndex = index),
+                  ),
+                  SpendingBarChart(
+                    categorySummaries: summaries,
+                    touchedIndex: touchedIndex,
+                  ),
+                ],
               ),
-              SpendingBarChart(
-                categorySummaries: summaries,
-                touchedIndex: touchedIndex,
-              ),
-            ],
+            ),
           ),
-        ),
+          Card(child: CategorizedTransactionList()),
+        ],
       ),
     );
   }
