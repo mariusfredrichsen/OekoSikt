@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/models/budget.dart';
 import 'package:frontend/core/models/filter_state.dart';
+import 'package:frontend/core/models/transaction.dart';
 import 'package:frontend/core/models/transaction_categories.dart';
 import 'package:frontend/core/models/transaction_category_summary.dart';
 import 'package:frontend/features/spending/widgets/budget_card.dart';
@@ -10,13 +11,17 @@ import 'package:frontend/features/spending/widgets/spending_pie_chart.dart';
 
 class SpendingContent extends StatelessWidget {
   final List<TransactionCategorySummary> summaries;
-  final Budget? budget;
   final FilterScope scope;
+
   final int touchedIndex;
   final ValueChanged<int> onTouchedIndexChanged;
 
+  final Budget? budget;
   final ValueChanged<double>? onBudgetUpdated;
+
   final ValueChanged<Set<TransactionCategory>>? onCategoryFilterChanged;
+
+  final List<Transaction> transactions;
 
   const SpendingContent({
     super.key,
@@ -27,6 +32,7 @@ class SpendingContent extends StatelessWidget {
     required this.onTouchedIndexChanged,
     this.onBudgetUpdated,
     this.onCategoryFilterChanged,
+    required this.transactions,
   });
 
   bool get _showBudget =>
@@ -59,15 +65,17 @@ class SpendingContent extends StatelessWidget {
                     touchedIndex: touchedIndex,
                     onTouchedIndexChanged: onTouchedIndexChanged,
                   ),
-                  SpendingBarChart(
-                    categorySummaries: summaries,
-                    touchedIndex: touchedIndex,
-                  ),
+                  // SpendingBarChart(
+                  //   categorySummaries: summaries,
+                  //   touchedIndex: touchedIndex,
+                  // ),
                 ],
               ),
             ),
           ),
-          const Card(child: CategorizedTransactionList()),
+          Card(
+            child: CategorizedTransactionList(allTransactions: transactions),
+          ),
         ],
       ),
     );

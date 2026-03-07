@@ -1,81 +1,84 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/models/transaction.dart';
 import 'package:frontend/core/models/transaction_categories.dart';
 import 'package:frontend/core/theme/app_colors.dart';
-import 'package:frontend/core/widget/cards/card_container.dart';
+import 'package:frontend/utils/string_extention.dart';
 
 class CategorizedTransactionList extends StatelessWidget {
-  const CategorizedTransactionList({super.key});
+  final List<Transaction> allTransactions;
+
+  const CategorizedTransactionList({super.key, required this.allTransactions});
 
   @override
   Widget build(BuildContext context) {
-    final categories = TransactionCategory.values
-        .where((cat) => cat != TransactionCategory.all)
-        .toList();
+    final groupedMap = _createGroupedTransactions(allTransactions);
+
+    final sortedEntries = groupedMap.entries.toList()
+      ..sort((a, b) => _getTotal(b.value).compareTo(_getTotal(a.value)));
 
     return Column(
-      children: categories.map((cat) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 0.0),
-          child: _buildCategoryDropdown(cat),
+      children: sortedEntries.map((entry) {
+        return Container(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: Theme.of(context).dividerColor),
+            ),
+          ),
+          child: _buildCategoryDropdown(entry.key, entry.value),
         );
       }).toList(),
     );
   }
 
-  Widget _buildCategoryDropdown(TransactionCategory cat) {
-    return Card(
-      color: AppColors.softBlue,
-      child: ExpansionTile(
-        leading: Icon(cat.icon, color: cat.color),
-        title: Text(
-          cat.label.toUpperCase(),
-          style: const TextStyle(
-            color: AppColors.navy,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-        ),
-        trailing: const Icon(Icons.keyboard_arrow_down, color: AppColors.navy),
+  Map<TransactionCategory, List<Transaction>> _createGroupedTransactions(
+    List<Transaction> transactions,
+  ) {
+    final grouped = <TransactionCategory, List<Transaction>>{};
+    for (final t in transactions) {
+      (grouped[t.category] ??= []).add(t);
+    }
+    return grouped;
+  }
 
-        children: [
-          Container(
-            width: double.infinity,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "RECENT TRANSACTIONS",
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _buildTransactionRow("REMA 1000", "- 450 NOK"),
-                _buildTransactionRow("KIWI", "- 120 NOK"),
-              ],
-            ),
-          ),
-        ],
-      ),
+  double _getTotal(List<Transaction> transactions) {
+    return transactions.fold(
+      0.0,
+      (sum, t) => sum + (t.amountOut?.abs() ?? 0.0),
     );
   }
 
-  Widget _buildTransactionRow(String title, String amount) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 11, color: AppColors.navy),
-          ),
-          Text(
-            amount,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-          ),
-        ],
+  Widget _buildCategoryDropdown(
+    TransactionCategory cat,
+    List<Transaction> transactions,
+  ) {
+    final total = _getTotal(transactions);
+
+    return ListTile(
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      visualDensity: const VisualDensity(vertical: -4),
+      minLeadingWidth: 0,
+      horizontalTitleGap: 12,
+      leading: Icon(cat.icon, color: cat.color, size: 18),
+      title: Text(
+        cat.name.capitalize(),
+        style: const TextStyle(
+          fontSize: 11,
+          color: AppColors.navy,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      subtitle: Text(
+        "${transactions.length} items",
+        style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
+      ),
+      trailing: Text(
+        "${total.round()} kr",
+        style: const TextStyle(
+          color: AppColors.navy,
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }

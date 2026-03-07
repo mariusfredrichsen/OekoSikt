@@ -249,6 +249,10 @@ class _SpendingPageState extends State<SpendingPage> {
           onCategoryFilterChanged: isMonthScope
               ? (filter) => _updateCategoryFilter(date, filter)
               : null,
+          transactions: _filters
+              .applyFilter(widget.transactions)
+              .where((t) => t.category != TransactionCategory.transfer)
+              .toList(),
         );
       },
     );

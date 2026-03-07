@@ -69,7 +69,7 @@ class SpendingBarChart extends StatelessWidget {
         SizedBox(
           width: 72,
           child: Text(
-            "${categorySummary.categorySum.toStringAsFixed(1)} kr",
+            "${categorySummary.categorySum.abs().toStringAsFixed(1)} kr",
             textAlign: TextAlign.right,
             style: TextStyle(
               color: isSelected
