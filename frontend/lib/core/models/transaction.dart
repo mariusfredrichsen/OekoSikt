@@ -1,4 +1,5 @@
 import 'package:frontend/core/models/transaction_categories.dart';
+import 'package:frontend/utils/transaction_categorizer.dart';
 
 class Transaction {
   final DateTime executionDate;
@@ -53,76 +54,98 @@ class Transaction {
     required this.category,
   });
 
+  /// CSV columns (0-indexed, no category column):
+  ///  0  Utført dato        → executionDate
+  ///  1  Bokført dato       → postedDate
+  ///  2  Rentedato          → valueDate
+  ///  3  Beskrivelse        → description
+  ///  4  Type               → type
+  ///  5  Undertype          → subType
+  ///  6  Fra konto          → fromAccount
+  ///  7  Avsender           → sender
+  ///  8  Til konto          → toAccount
+  ///  9  Mottakernavn       → recipientName
+  /// 10  Beløp inn          → amountIn
+  /// 11  Beløp ut           → amountOut
+  /// 12  Valuta             → currency
+  /// 13  Status             → status
+  /// 14  Melding/KID/Fakt.  → customerReferenceNumber
+  /// 15  eFaktura           → isEInvoice
+  /// 16  eFaktura eier      → eInvoiceOwner
+  /// 17  eFaktura type      → eInvoiceType
+  /// 18  Melding            → message
+  /// 19  KID                → kid
+  /// 20  Faktura nr.        → invoiceNumber
   factory Transaction.fromCsv(List<dynamic> row) {
-    // Helper to safely convert any value to String
-    String asString(dynamic value) {
-      if (value == null) return '';
-      return value.toString();
+    String asString(dynamic value) => value?.toString() ?? '';
+
+    DateTime parseDate(String s) {
+      if (s.isEmpty) return DateTime.now();
+      final p = s.split('.');
+      if (p.length < 3) return DateTime.now();
+      return DateTime(int.parse(p[2]), int.parse(p[1]), int.parse(p[0]));
     }
 
-    // Helper function to parse Norwegian date format (dd.MM.yyyy)
-    DateTime parseDate(String dateStr) {
-      if (dateStr.isEmpty) return DateTime.now();
-      final parts = dateStr.split('.');
-      return DateTime(
-        int.parse(parts[2]), // year
-        int.parse(parts[1]), // month
-        int.parse(parts[0]), // day
-      );
+    double? parseAmount(String s) {
+      if (s.isEmpty) return null;
+      return double.tryParse(s.replaceAll(',', '.'));
     }
 
-    // Helper function to parse amount (handles comma as decimal separator)
-    double? parseAmount(String amountStr) {
-      if (amountStr.isEmpty) return null;
-      return double.tryParse(amountStr.replaceAll(',', '.'));
-    }
-
-    final categoryRaw = row.length > 21 ? asString(row[21]) : '';
+    final description = asString(row[3]);
+    final type = asString(row[4]);
+    final subType = asString(row[5]);
+    final recipientName = asString(row[9]);
+    final amountIn = parseAmount(asString(row[10]));
+    final amountOut = parseAmount(asString(row[11]));
+    // row[14] is Melding/KID/Fakt.nr — used as the rich message field for categorisation
+    final message = asString(row[14]);
 
     return Transaction(
       executionDate: parseDate(asString(row[0])),
       postedDate: parseDate(asString(row[1])),
       valueDate: parseDate(asString(row[2])),
-      description: asString(row[3]),
-      type: asString(row[4]),
-      subType: asString(row[5]),
+      description: description,
+      type: type,
+      subType: subType,
       fromAccount: asString(row[6]),
       sender: asString(row[7]),
       toAccount: asString(row[8]),
-      recipientName: asString(row[9]),
-      amountIn: parseAmount(asString(row[10])),
-      amountOut: parseAmount(asString(row[11])),
+      recipientName: recipientName,
+      amountIn: amountIn,
+      amountOut: amountOut,
       currency: asString(row[12]),
       status: asString(row[13]),
-      customerReferenceNumber: asString(row[14]).isEmpty
-          ? null
-          : asString(row[14]),
+      customerReferenceNumber: message.isEmpty ? null : message,
       isEInvoice: asString(row[15]).isNotEmpty,
       eInvoiceOwner: asString(row[16]).isEmpty ? null : asString(row[16]),
       eInvoiceType: asString(row[17]).isEmpty ? null : asString(row[17]),
       message: asString(row[18]).isEmpty ? null : asString(row[18]),
       kid: asString(row[19]).isEmpty ? null : asString(row[19]),
       invoiceNumber: asString(row[20]).isEmpty ? null : asString(row[20]),
-      category: TransactionCategory.fromString(categoryRaw),
+      // Auto-classify — no category column in CSV anymore
+      category: TransactionCategorizer.categorize(
+        description: description,
+        type: type,
+        subType: subType,
+        recipientName: recipientName,
+        message: message,
+        amountIn: amountIn,
+        amountOut: amountOut,
+      ),
     );
   }
 
   String get cleanTitle {
-    // 1. Get the raw description (assuming your model has a 'description' field)
-    String rawName = description;
-
-    // 2. Remove leading dates like "05.02 " or "31.12 "
-    // \d{2}\.\d{2}\s+ looks for two digits, a dot, two digits, and a space at the start
-    rawName = rawName.replaceAll(RegExp(r'^\d{2}\.\d{2}\s+'), '');
-
-    // 3. Remove parentheses with numbers inside like " (12242602267)"
-    // \s*\(\d+\) looks for optional spaces followed by numbers in parentheses
-    rawName = rawName.replaceAll(RegExp(r'\s*\(\d+\)'), '');
-
-    // 4. Remove common prefixes like "Vipps*" or "ZETTLE_*"
-    rawName = rawName.replaceAll(RegExp(r'^(Vipps\*|ZETTLE_\*|DNH\*)'), '');
-
-    // 5. Trim any leftover white spaces from the beginning or end
-    return rawName.trim();
+    String raw = description;
+    raw = raw.replaceAll(
+      RegExp(r'^\d{2}\.\d{2}\s+'),
+      '',
+    ); // leading date "05.02 "
+    raw = raw.replaceAll(RegExp(r'\s*\(\d+\)'), ''); // "(12242602267)"
+    raw = raw.replaceAll(
+      RegExp(r'^(Vipps\*|ZETTLE_\*|DNH\*)'),
+      '',
+    ); // payment prefixes
+    return raw.trim();
   }
 }

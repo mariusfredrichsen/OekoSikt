@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/core/theme/app_colors.dart';
 
 class CardContainer extends StatelessWidget {
   final Color? color;
@@ -21,7 +22,10 @@ class CardContainer extends StatelessWidget {
     return Card(
       color: color,
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.blue200, width: 1),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -29,15 +33,15 @@ class CardContainer extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: 12,
           children: [
-            if (title != null) title!,
-            if (body != null) body!,
+            ?title,
+            ?body,
 
             if (footer != null || (actions != null && actions!.isNotEmpty))
               Column(
                 spacing: 8,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (footer != null) footer!,
+                  ?footer,
                   if (actions != null && actions!.isNotEmpty)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,

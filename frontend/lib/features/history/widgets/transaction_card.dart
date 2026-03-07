@@ -22,7 +22,7 @@ class TransactionCard extends StatelessWidget {
     final amount = transaction.amountIn ?? transaction.amountOut ?? 0.0;
 
     return InkWell(
-      splashColor: Colors.blue.withAlpha(30),
+      splashColor: AppColors.navy.withAlpha(30),
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.all(8),
@@ -143,11 +143,7 @@ class TransactionCard extends StatelessWidget {
             width: 100,
             child: Text(
               label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.grey,
-                fontSize: 12,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
             ),
           ),
           Expanded(

@@ -87,7 +87,7 @@ class _MainNavigationState extends State<MainNavigation> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const Icon(Icons.error_outline, size: 48, color: AppColors.error),
             const SizedBox(height: 16),
             Text(_errorMessage!),
             const SizedBox(height: 16),

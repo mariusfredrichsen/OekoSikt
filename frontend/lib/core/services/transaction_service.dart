@@ -21,7 +21,8 @@ class TransactionService {
       csvTable.removeAt(0);
 
       // Convert each CSV row into a Transaction object
-      return csvTable.map((row) => Transaction.fromCsv(row)).toList();
+      return csvTable.map((row) => Transaction.fromCsv(row)).toList()
+        ..sort((a, b) => b.executionDate.compareTo(a.executionDate));
     } catch (e) {
       print('Error loading transactions: $e');
       return [];

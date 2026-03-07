@@ -17,7 +17,9 @@ class BudgetBar extends StatelessWidget {
         valueColor: AlwaysStoppedAnimation<Color?>(
           value < 0.8
               ? AppColors.income
-              : (value < 1.0 ? Colors.orange : AppColors.error),
+              : value < 1.0
+              ? AppColors.amber500
+              : AppColors.error,
         ),
       ),
     );

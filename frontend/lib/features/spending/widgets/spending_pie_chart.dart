@@ -34,7 +34,7 @@ class SpendingPieChart extends StatelessWidget {
           children: <Widget>[
             Expanded(
               child: AspectRatio(
-                aspectRatio: 1,
+                aspectRatio: 1.5,
                 child: Stack(
                   children: [
                     PieChart(
@@ -70,21 +70,6 @@ class SpendingPieChart extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: List.generate(categorySummaries.length, (index) {
-                final summary = categorySummaries[index];
-                return _buildIndicator(
-                  color: touchedIndex == -1 || touchedIndex == index
-                      ? summary.category.color
-                      : Colors.grey,
-                  text: summary.category.label,
-                  isSelected: touchedIndex == index,
-                );
-              }),
             ),
           ],
         ),
@@ -131,58 +116,6 @@ class SpendingPieChart extends StatelessWidget {
     );
   }
 
-  Widget _buildIndicator({
-    required Color color,
-    required String text,
-    required bool isSelected,
-  }) {
-    return Expanded(
-      flex: 1,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: Center(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: isSelected ? 14 : 10,
-                height: isSelected ? 14 : 10,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Stack(
-            alignment: Alignment.centerLeft,
-            children: [
-              Opacity(
-                opacity: 0,
-                child: Text(
-                  text,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? AppColors.navy : AppColors.textSecondary,
-                ),
-                child: Text(text),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   List<PieChartSectionData> _showingSections() {
     return List.generate(categorySummaries.length, (i) {
       final summary = categorySummaries[i];
@@ -195,7 +128,7 @@ class SpendingPieChart extends StatelessWidget {
       return PieChartSectionData(
         color: touchedIndex == -1 || isTouched
             ? summary.category.color
-            : Colors.grey,
+            : AppColors.gray300,
         value: summary.categorySum,
         title: '${percentage.toStringAsFixed(0)}%',
         radius: radius,
