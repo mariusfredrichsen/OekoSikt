@@ -28,13 +28,11 @@ class _SpendingPageState extends State<SpendingPage> {
 
   static const int _epochYear = 2020;
   static const int _epochMonth = 1;
-
   static const int _epochAbsMonth = _epochYear * 12 + _epochMonth - 1;
 
   late PageController _pageController;
 
   int _monthToPage(DateTime d) => (d.year * 12 + d.month - 1) - _epochAbsMonth;
-
   DateTime _pageToMonth(int page) {
     final abs = _epochAbsMonth + page;
     return DateTime(abs ~/ 12, abs % 12 + 1);
@@ -159,7 +157,8 @@ class _SpendingPageState extends State<SpendingPage> {
     });
   }
 
-  List<TransactionCategorySummary> _buildSummaries(FilterState filters) {
+  ({List<TransactionCategorySummary> summaries, List<Transaction> transactions})
+  _buildPageData(FilterState filters) {
     final transactions = filters
         .applyFilter(widget.transactions)
         .where((t) => t.category != TransactionCategory.transfer)
@@ -172,17 +171,20 @@ class _SpendingPageState extends State<SpendingPage> {
       grouped[t.category] = (grouped[t.category] ?? 0) + (t.amountOut ?? 0);
     }
 
-    return grouped.entries
-        .map(
-          (e) => TransactionCategorySummary(
-            category: e.key,
-            totalSum: total,
-            categorySum: e.value,
-          ),
-        )
-        .where((s) => s.categorySum != 0)
-        .toList()
-      ..sort((a, b) => a.categorySum.compareTo(b.categorySum));
+    final summaries =
+        grouped.entries
+            .map(
+              (e) => TransactionCategorySummary(
+                category: e.key,
+                totalSum: total,
+                categorySum: e.value,
+              ),
+            )
+            .where((s) => s.categorySum != 0)
+            .toList()
+          ..sort((a, b) => a.categorySum.compareTo(b.categorySum));
+
+    return (summaries: summaries, transactions: transactions);
   }
 
   @override
@@ -234,13 +236,15 @@ class _SpendingPageState extends State<SpendingPage> {
             : DateTime(_pageToYear(page), _filters.referenceDate.month);
 
         final pageFilters = _filters.copyWith(referenceDate: date);
-        final summaries = _buildSummaries(pageFilters);
+
+        final (:summaries, :transactions) = _buildPageData(pageFilters);
+
         final isMonthScope = _filters.scope == FilterScope.month;
 
         return SpendingContent(
           summaries: summaries,
+          transactions: transactions,
           budget: isMonthScope ? _budgetFor(date) : null,
-          scope: _filters.scope,
           touchedIndex: _touchedIndex,
           onTouchedIndexChanged: (i) => setState(() => _touchedIndex = i),
           onBudgetUpdated: isMonthScope
@@ -249,10 +253,6 @@ class _SpendingPageState extends State<SpendingPage> {
           onCategoryFilterChanged: isMonthScope
               ? (filter) => _updateCategoryFilter(date, filter)
               : null,
-          transactions: _filters
-              .applyFilter(widget.transactions)
-              .where((t) => t.category != TransactionCategory.transfer)
-              .toList(),
         );
       },
     );
