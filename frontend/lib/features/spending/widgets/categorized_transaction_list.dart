@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/models/transaction.dart';
 import 'package:frontend/core/models/transaction_categories.dart';
 import 'package:frontend/core/theme/app_colors.dart';
+import 'package:frontend/features/spending/pages/categorizing_page.dart';
 import 'package:frontend/utils/string_extention.dart';
 
 class CategorizedTransactionList extends StatelessWidget {
@@ -24,7 +25,7 @@ class CategorizedTransactionList extends StatelessWidget {
               bottom: BorderSide(color: Theme.of(context).dividerColor),
             ),
           ),
-          child: _buildCategoryDropdown(entry.key, entry.value),
+          child: _buildCategoryDropdown(entry.key, entry.value, context),
         );
       }).toList(),
     );
@@ -50,34 +51,51 @@ class CategorizedTransactionList extends StatelessWidget {
   Widget _buildCategoryDropdown(
     TransactionCategory cat,
     List<Transaction> transactions,
+    BuildContext context,
   ) {
     final total = _getTotal(transactions);
 
-    return ListTile(
-      dense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      visualDensity: const VisualDensity(vertical: -4),
-      minLeadingWidth: 0,
-      horizontalTitleGap: 12,
-      leading: Icon(cat.icon, color: cat.color, size: 18),
-      title: Text(
-        cat.name.capitalize(),
-        style: const TextStyle(
-          fontSize: 11,
-          color: AppColors.navy,
-          fontWeight: FontWeight.w700,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CategorizingPage(transactions: transactions),
+          ),
+        );
+      },
+      child: ListTile(
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        visualDensity: const VisualDensity(vertical: -4),
+        minLeadingWidth: 0,
+        horizontalTitleGap: 12,
+        leading: Icon(cat.icon, color: cat.color, size: 18),
+        title: Text(
+          cat.name.capitalize(),
+          style: const TextStyle(
+            fontSize: 11,
+            color: AppColors.navy,
+            fontWeight: FontWeight.w700,
+          ),
         ),
-      ),
-      subtitle: Text(
-        "${transactions.length} items",
-        style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
-      ),
-      trailing: Text(
-        "${total.round()} kr",
-        style: const TextStyle(
-          color: AppColors.navy,
-          fontSize: 13,
-          fontWeight: FontWeight.w800,
+        subtitle: Text(
+          "${transactions.length} items",
+          style: const TextStyle(fontSize: 9, color: AppColors.textSecondary),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "${total.round()} kr",
+              style: const TextStyle(
+                color: AppColors.navy,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const Icon(Icons.arrow_right, color: AppColors.textSecondary),
+          ],
         ),
       ),
     );

@@ -5,7 +5,7 @@ import 'package:frontend/core/models/transaction_categories.dart';
 import 'package:frontend/core/models/transaction_category_summary.dart';
 import 'package:frontend/features/spending/widgets/budget_card.dart';
 import 'package:frontend/features/spending/widgets/categorized_transaction_list.dart';
-import 'package:frontend/features/spending/widgets/spending_bubbles_chart.dart';
+import 'package:frontend/features/spending/widgets/spending_blob_chart.dart';
 import 'package:frontend/features/spending/widgets/spending_pie_chart.dart';
 
 class SpendingContent extends StatelessWidget {
