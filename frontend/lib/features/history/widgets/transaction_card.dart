@@ -61,7 +61,7 @@ class TransactionCard extends StatelessWidget {
                     subtitle: Row(
                       children: [
                         Icon(transaction.category.icon, size: 14),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             formatDate(transaction.executionDate),
@@ -73,7 +73,7 @@ class TransactionCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(width: 24),
+                const SizedBox(width: 24),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -87,7 +87,7 @@ class TransactionCard extends StatelessWidget {
                     ),
                     Text(
                       transaction.currency,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
@@ -95,7 +95,7 @@ class TransactionCard extends StatelessWidget {
                   ],
                 ),
                 Padding(
-                  padding: EdgeInsets.only(left: 4),
+                  padding: const EdgeInsets.only(left: 4),
                   child: Icon(
                     isExpanded ? Icons.arrow_drop_down : Icons.arrow_right,
                   ),

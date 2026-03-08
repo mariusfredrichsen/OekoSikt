@@ -22,7 +22,7 @@ class TransactionList extends StatelessWidget {
         itemCount: transactions.length,
         itemBuilder: (context, index) {
           return Container(
-            margin: EdgeInsets.symmetric(horizontal: 16),
+            margin: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               children: [
                 TransactionCard(
@@ -30,7 +30,7 @@ class TransactionList extends StatelessWidget {
                   isExpanded: expandedIndex == index,
                   onTap: () => onTransactionTapped(index),
                 ),
-                Divider(color: AppColors.divider, thickness: 2),
+                const Divider(color: AppColors.divider, thickness: 2),
               ],
             ),
           );
