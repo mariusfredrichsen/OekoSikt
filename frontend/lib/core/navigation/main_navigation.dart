@@ -52,7 +52,7 @@ class _MainNavigationState extends State<MainNavigation> {
       body: IndexedStack(
         index: _currentItem.index,
         children: [
-          const HomePage(),
+          HomePage(),
           HistoryPage(transactions: _allTransactions),
           SpendingPage(transactions: _allTransactions),
         ],
