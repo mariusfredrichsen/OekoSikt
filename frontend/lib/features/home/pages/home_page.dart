@@ -1,21 +1,7 @@
 import 'package:flutter/material.dart';
-
-// class HomePage extends StatelessWidget {
-//   const HomePage({super.key});
-
-//   // @override
-//   // State<HomePage> createState() => _HomePageState();
-// }
+// import 'package:frontend/features/history/widgets/transaction_card.dart';
 
 class HomePage extends StatelessWidget {
-  // int _counter = 0;
-
-  // void _incrementCounter() {
-  //   setState(() {
-  //     _counter++;
-  //   });
-  // }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,10 +9,26 @@ class HomePage extends StatelessWidget {
         // backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text("Home"),
       ),
-      body: Column(
-        mainAxisAlignment: .center,
-        crossAxisAlignment: .center,
-        children: [balance()],
+      body: SingleChildScrollView(
+        // <--- This is the magic wrapper
+        child: Column(
+          // mainAxisAlignment: .center,
+          crossAxisAlignment: .center,
+          children: [
+            balance(),
+            Text('My accounts'),
+            Column(
+              children: [
+                cardcard('Allkonto', '123 456 789', '15 000'),
+                cardcard('Sparekonto1', '789 123 456', '127 000'),
+                cardcard('Sparekonto2', '987 654 321', '67 000'),
+              ],
+            ),
+            Text('All transactions'),
+            transactionList(),
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
@@ -34,72 +36,70 @@ class HomePage extends StatelessWidget {
 
 Widget balance() {
   return Container(
-    padding: const EdgeInsets.all(24.0),
-    margin: const EdgeInsets.all(16.0),
-    decoration: BoxDecoration(
-      color: const Color(0xFF002D58),
-      borderRadius: BorderRadius.circular(30),
+    margin: const EdgeInsets.all(32.0),
+    padding: const EdgeInsets.all(20),
+    decoration: const BoxDecoration(
+      color: Color(0xFF002D58),
+      borderRadius: BorderRadius.only(
+        topLeft: Radius.circular(15),
+        topRight: Radius.circular(15),
+        bottomLeft: Radius.circular(15),
+        bottomRight: Radius.circular(15),
+      ),
     ),
-
     child: Column(
-      mainAxisSize: .min,
-      crossAxisAlignment: .start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           'Total Balance',
-          style: TextStyle(color: Colors.white70, fontSize: 12),
+          style: TextStyle(color: Colors.white70, fontSize: 14),
         ),
         const SizedBox(height: 8),
+        // The main balance text
         RichText(
           text: const TextSpan(
             children: [
               TextSpan(
-                text: '100 901,20 ',
+                text: '100 901,25 ',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 36,
+                  fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               TextSpan(
                 text: 'NOK',
-                style: TextStyle(color: Colors.white70, fontSize: 18),
+                style: TextStyle(color: Colors.white70, fontSize: 14),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 24),
-        // Your Row of buttons would go here
+        const SizedBox(height: 20),
+        // Action Buttons Row
+        Row(
+          children: [
+            Expanded(
+              child: balanceButton(
+                Icons.north_east,
+                'Transfer',
+                Colors.white,
+                Colors.black,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: balanceButton(
+                Icons.add_circle_outline,
+                'Add Money',
+                Colors.white.withOpacity(0.1),
+                Colors.white,
+              ),
+            ),
+          ],
+        ),
       ],
     ),
   );
-
-  // return Card(
-  //   shape: ShapeBorder(
-  //     // <-- Use RoundedRectangleBorder
-  //     borderRadius: BorderRadius.circular(50.0), // <-- Set the border radius
-  //   ),
-  //   child: Container(
-  //     padding: EdgeInsets.all(16),
-  //     child: Text(
-  //       'Product Name',
-  //       style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
-  //     ),
-  //   ),
-  // );
-
-  // return Column(
-  //   crossAxisAlignment: .center,
-  //   children: [
-  //     Container(
-  //       margin: const EdgeInsets.all(10.0),
-  //       color: Colors.amber[600],
-  //       width: 100.0,
-  //       height: 60.0,
-  //       child: Text("Total balance"),
-  //     ),
-  //   ],
-  // );
 }
 
 Widget balanceButton(
@@ -109,7 +109,7 @@ Widget balanceButton(
   Color textColor,
 ) {
   return Container(
-    padding: const EdgeInsets.symmetric(vertical: 12),
+    padding: const EdgeInsets.symmetric(vertical: 6),
     decoration: BoxDecoration(
       color: bgColor,
       borderRadius: BorderRadius.circular(12),
@@ -130,3 +130,213 @@ Widget balanceButton(
     ),
   );
 }
+
+Widget cardcard(String account, String accountNumber, String amount) {
+  return Container(
+    width: double.infinity,
+    margin: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 8.0),
+    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+    decoration: const BoxDecoration(
+      color: Color.fromARGB(255, 185, 207, 228),
+      borderRadius: BorderRadius.only(
+        topLeft: Radius.circular(15),
+        topRight: Radius.circular(15),
+        bottomLeft: Radius.circular(15),
+        bottomRight: Radius.circular(15),
+      ),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          // crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              account,
+              style: TextStyle(
+                color: Color(0xFF002D58),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            // const SizedBox(height: 8),
+            Text(accountNumber, style: TextStyle(color: Color(0xFF002D58))),
+          ],
+        ),
+
+        Row(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  amount,
+                  style: TextStyle(
+                    color: Color(0xFF002D58),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                // const SizedBox(height: 2),
+                Text('NOK', style: TextStyle(color: Color(0xFF002D58))),
+              ],
+            ),
+            const SizedBox(width: 6),
+            const Icon(
+              Icons.chevron_right, // The arrow icon from your original image
+              color: Colors.black26, // Light gray color like the design
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+Widget transactionList() {
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 32.0),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ),
+    child: Column(
+      children: [
+        transactionItem("ICA Supermarket", "2026-02-22", "-450"),
+        const Divider(
+          height: 1,
+          indent: 70,
+        ), // Divider that starts after the icon
+        transactionItem("Spotify Premium", "2026-02-22", "-119"),
+        const Divider(height: 1, indent: 70),
+        transactionItem("H&M Sweden", "2026-02-21", "-899"),
+      ],
+    ),
+  );
+}
+
+Widget transactionItem(String name, String date, String amount) {
+  return Padding(
+    padding: const EdgeInsets.all(16.0),
+    child: Row(
+      children: [
+        // The Red Circular Icon
+        Container(
+          height: 45,
+          width: 45,
+          decoration: BoxDecoration(
+            color: Colors.red.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.north_east, color: Colors.red, size: 20),
+        ),
+        const SizedBox(width: 16),
+        // Name and Date
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                name,
+                style: const TextStyle(
+                  color: Color(0xFF002D58),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              Text(
+                date,
+                style: const TextStyle(color: Colors.grey, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+        // The Amount
+        Text(
+          amount,
+          style: const TextStyle(
+            color: Color(0xFF002D58),
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// Widget transactionCard(String store, String date, String amount) {
+//   return Container(
+//     margin: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 8.0),
+//     padding: const EdgeInsets.all(12),
+//     decoration: BoxDecoration(
+//       color: Colors.white,
+//       borderRadius: BorderRadius.circular(15),
+//       // Optional: Add a light shadow to make it pop like the screenshot
+//       boxShadow: [
+//         BoxShadow(
+//           color: Colors.black.withOpacity(0.05),
+//           blurRadius: 10,
+//           offset: const Offset(0, 5),
+//         ),
+//       ],
+//     ),
+//     child: Row(
+//       children: [
+//         // 1. Circular Icon Background
+//         Container(
+//           padding: const EdgeInsets.all(10),
+//           decoration: BoxDecoration(
+//             color: Colors.red.withOpacity(0.1), // Light pink/red
+//             shape: BoxShape.circle,
+//           ),
+//           child: const Icon(
+//             Icons.north_east, // The "spending" arrow
+//             color: Colors.red,
+//             size: 20,
+//           ),
+//         ),
+//         const SizedBox(width: 16),
+
+//         // 2. Store Name and Date
+//         Expanded(
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               Text(
+//                 store,
+//                 style: const TextStyle(
+//                   fontWeight: FontWeight.bold,
+//                   fontSize: 16,
+//                   color: Color(0xFF002D58),
+//                 ),
+//               ),
+//               Text(
+//                 date,
+//                 style: const TextStyle(color: Colors.grey, fontSize: 13),
+//               ),
+//             ],
+//           ),
+//         ),
+
+//         // 3. Amount
+//         Text(
+//           amount,
+//           style: const TextStyle(
+//             fontWeight: FontWeight.bold,
+//             fontSize: 16,
+//             color: Color(0xFF002D58),
+//           ),
+//         ),
+//       ],
+//     ),
+//   );
+// }
